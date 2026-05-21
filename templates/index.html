@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Prep</title>
+    <!-- CodeMirror -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+    <!-- Marked for markdown rendering -->
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-card: #1e2a45;
+            --bg-input: #0f1729;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0b0;
+            --accent: #4fc3f7;
+            --accent-hover: #29b6f6;
+            --green: #66bb6a;
+            --red: #ef5350;
+            --orange: #ffa726;
+            --yellow: #ffee58;
+            --border: #2a3a5c;
+            --easy: #66bb6a;
+            --medium: #ffa726;
+            --hard: #ef5350;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .question-counter {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #000;
+        }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-success {
+            background: var(--green);
+            color: #000;
+        }
+        .btn-success:hover { background: #81c784; }
+        .btn-warning {
+            background: var(--orange);
+            color: #000;
+        }
+        .btn-warning:hover { background: #ffb74d; }
+        .btn-outline {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+        .btn-outline:hover {
+            background: rgba(79, 195, 247, 0.1);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Main layout */
+        .main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Left panel - Question list */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            transition: width 0.2s ease, opacity 0.2s ease;
+            overflow: hidden;
+        }
+        .sidebar.collapsed {
+            width: 0;
+            border-right: none;
+        }
+        .sidebar-toggle {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-left: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            left: 280px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            border-radius: 0 4px 4px 0;
+            transition: left 0.2s ease;
+            font-size: 14px;
+            line-height: 1;
+        }
+        .sidebar-toggle:hover {
+            color: var(--accent);
+            background: var(--bg-card);
+        }
+        .sidebar.collapsed ~ .sidebar-toggle {
+            left: 0;
+        }
+        .sidebar-header {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sidebar-header input {
+            flex: 1;
+            padding: 6px 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+        }
+        .sidebar-header input:focus {
+            border-color: var(--accent);
+        }
+        .filter-tabs {
+            display: flex;
+            padding: 6px 14px;
+            gap: 4px;
+            border-bottom: 1px solid var(--border);
+        }
+        .filter-tab {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        .filter-tab:hover { color: var(--text-primary); }
+        .filter-tab.active {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .question-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 4px 0;
+        }
+        .question-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 14px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.15s;
+            gap: 10px;
+        }
+        .question-item:hover {
+            background: rgba(79, 195, 247, 0.05);
+        }
+        .question-item.active {
+            background: rgba(79, 195, 247, 0.1);
+            border-left-color: var(--accent);
+        }
+        .question-item .q-id {
+            color: var(--text-secondary);
+            font-size: 12px;
+            width: 32px;
+            flex-shrink: 0;
+        }
+        .question-item .q-title {
+            font-size: 13px;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .question-item .q-diff {
+            font-size: 11px;
+            padding: 1px 6px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+        .q-diff.Easy { color: var(--easy); }
+        .q-diff.Medium { color: var(--medium); }
+        .q-diff.Hard { color: var(--hard); }
+        .question-item .q-freq {
+            font-size: 10px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            width: 38px;
+            text-align: right;
+        }
+
+        /* Content area */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Split panes - horizontal */
+        .split-h {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Left: Problem description */
+        .problem-pane {
+            width: 40%;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+        }
+        .pane-tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .pane-tab {
+            padding: 8px 16px;
+            font-size: 13px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+        }
+        .pane-tab:hover { color: var(--text-primary); }
+        .pane-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+        .problem-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            line-height: 1.7;
+        }
+        .problem-content h3 {
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+        .problem-content pre {
+            background: var(--bg-input);
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-size: 13px;
+            overflow-x: auto;
+            line-height: 1.5;
+        }
+        .problem-content code {
+            background: var(--bg-input);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+        .problem-content ul {
+            padding-left: 20px;
+        }
+
+        /* Solution pane */
+        .solution-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: none;
+        }
+        .solution-content.active { display: block; }
+        .solution-content pre {
+            background: var(--bg-input);
+            padding: 16px;
+            border-radius: 6px;
+            margin: 12px 0;
+            font-size: 13px;
+            overflow-x: auto;
+            line-height: 1.5;
+        }
+        .solution-content code {
+            background: var(--bg-input);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+        .solution-explanation {
+            line-height: 1.8;
+            margin-top: 16px;
+        }
+        .solution-explanation h4, .solution-explanation strong {
+            color: var(--accent);
+        }
+
+        /* Follow-up items */
+        .followup-section {
+            margin-bottom: 20px;
+        }
+        .followup-section h4 {
+            color: var(--accent);
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+        .followup-item {
+            background: var(--bg-input);
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--accent);
+        }
+        .followup-item.related {
+            border-left-color: var(--green);
+        }
+        .followup-item .fq-question {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+        .followup-item .fq-hint {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: none;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid var(--border);
+        }
+        .followup-item .fq-hint.visible {
+            display: block;
+        }
+        .followup-item .fq-toggle {
+            font-size: 12px;
+            color: var(--accent);
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            margin-top: 4px;
+        }
+        .followup-item .fq-toggle:hover {
+            text-decoration: underline;
+        }
+        .followup-item .fq-related-link {
+            color: var(--green);
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .followup-item .fq-related-link:hover {
+            text-decoration: underline;
+        }
+        .followup-item .fq-reason {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Right: Code editor + results */
+        .editor-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 400px;
+        }
+        .editor-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 14px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .editor-lang {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .editor-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .editor-container {
+            flex: 1;
+            overflow: hidden;
+        }
+        .CodeMirror {
+            height: 100% !important;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Results panel */
+        .results-panel {
+            height: 200px;
+            min-height: 100px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 14px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .results-header span {
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .results-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 14px;
+        }
+        .test-result {
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            background: var(--bg-input);
+            border-left: 3px solid var(--border);
+        }
+        .test-result.passed {
+            border-left-color: var(--green);
+        }
+        .test-result.failed {
+            border-left-color: var(--red);
+        }
+        .test-result .tr-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        .test-result .tr-status {
+            font-weight: 600;
+        }
+        .test-result .tr-status.passed { color: var(--green); }
+        .test-result .tr-status.failed { color: var(--red); }
+        .test-result .tr-details {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        .test-result .tr-details div {
+            margin: 2px 0;
+        }
+
+        .summary-bar {
+            padding: 8px 14px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .summary-bar.all-passed {
+            color: var(--green);
+            background: rgba(102, 187, 106, 0.1);
+        }
+        .summary-bar.some-failed {
+            color: var(--red);
+            background: rgba(239, 83, 80, 0.1);
+        }
+
+        /* Resize handle */
+        .resize-handle {
+            width: 4px;
+            cursor: col-resize;
+            background: var(--border);
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .resize-handle:hover {
+            background: var(--accent);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3a4a6c; }
+
+        /* Welcome screen */
+        .welcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            color: var(--text-secondary);
+            gap: 12px;
+        }
+        .welcome h2 { color: var(--accent); font-size: 24px; }
+        .welcome p { font-size: 14px; }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--text-secondary);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Kbd styling */
+        kbd {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 1px 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>Work Prep</h1>
+        <div class="header-controls">
+            <span class="question-counter" id="questionCounter">0 / 0 problems</span>
+            <button class="btn btn-outline" id="prevBtn" disabled>Prev</button>
+            <button class="btn btn-primary" id="nextBtn">Next Question</button>
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main" style="position: relative;">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <input type="text" id="searchInput" placeholder="Search problems...">
+            </div>
+            <div class="filter-tabs">
+                <button class="filter-tab active" data-filter="all">All</button>
+                <button class="filter-tab" data-filter="Easy">Easy</button>
+                <button class="filter-tab" data-filter="Medium">Med</button>
+                <button class="filter-tab" data-filter="Hard">Hard</button>
+            </div>
+            <div class="question-list" id="questionList"></div>
+        </div>
+        <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">&#9664;</button>
+
+        <!-- Content -->
+        <div class="content" id="contentArea">
+            <!-- Welcome -->
+            <div class="welcome" id="welcomeScreen">
+                <h2>Ready to Practice</h2>
+                <p>Click <strong>Next Question</strong> or pick a problem from the list to begin.</p>
+                <p style="margin-top: 8px;"><kbd>Ctrl+Enter</kbd> to run code &middot; <kbd>Ctrl+S</kbd> to save</p>
+            </div>
+
+            <!-- Problem view (hidden initially) -->
+            <div class="split-h" id="problemView" style="display: none;">
+                <!-- Problem description -->
+                <div class="problem-pane" id="problemPane">
+                    <div class="pane-tabs">
+                        <button class="pane-tab active" id="descTab">Description</button>
+                        <button class="pane-tab" id="solTab">Solution</button>
+                        <button class="pane-tab" id="followUpTab">Follow-ups</button>
+                    </div>
+                    <div class="problem-content" id="problemDesc"></div>
+                    <div class="solution-content" id="solutionPane">
+                        <div id="solutionBody">
+                            <p style="color: var(--text-secondary);">Click the "Solution" tab to reveal the answer.</p>
+                        </div>
+                    </div>
+                    <div class="solution-content" id="followUpPane">
+                        <div id="followUpBody">
+                            <p style="color: var(--text-secondary);">No follow-up questions available.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="resize-handle" id="resizeHandle"></div>
+
+                <!-- Editor + Results -->
+                <div class="editor-pane">
+                    <div class="editor-header">
+                        <span class="editor-lang">Python 3</span>
+                        <div class="editor-actions">
+                            <button class="btn btn-outline" id="resetBtn">Reset</button>
+                            <button class="btn btn-warning" id="saveBtn">Save</button>
+                            <button class="btn btn-success" id="runBtn">Run Code</button>
+                        </div>
+                    </div>
+                    <div class="editor-container">
+                        <textarea id="codeEditor"></textarea>
+                    </div>
+                    <div class="results-panel">
+                        <div class="results-header">
+                            <span>Test Results</span>
+                            <span id="resultsSummary" style="color: var(--text-secondary); font-size: 12px;"></span>
+                        </div>
+                        <div class="results-body" id="resultsBody">
+                            <p style="color: var(--text-secondary); font-size: 13px; text-align: center; margin-top: 20px;">
+                                Run your code to see results here.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.0/marked.min.js"></script>
+    <script>
+        // State
+        let questions = [];
+        let currentIndex = -1;
+        let currentQuestion = null;
+        let currentTestCases = [];
+        let currentFunctionName = '';
+        let currentTemplate = '';
+        let activeFilter = 'all';
+        let searchQuery = '';
+
+        // CodeMirror editor
+        const editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+            mode: 'python',
+            theme: 'dracula',
+            lineNumbers: true,
+            matchBrackets: true,
+            autoCloseBrackets: true,
+            indentUnit: 4,
+            tabSize: 4,
+            indentWithTabs: false,
+            extraKeys: {
+                'Ctrl-Enter': () => runCode(),
+                'Cmd-Enter': () => runCode(),
+                'Ctrl-/': 'toggleComment',
+                'Tab': (cm) => cm.replaceSelection('    ', 'end'),
+            }
+        });
+
+        // Save code
+        async function saveCode() {
+            if (!currentQuestion) return;
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            try {
+                await fetch(`/api/save/${currentQuestion.id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: editor.getValue() })
+                });
+                saveBtn.textContent = 'Saved!';
+                setTimeout(() => { saveBtn.textContent = 'Save'; saveBtn.disabled = false; }, 1000);
+            } catch (err) {
+                saveBtn.textContent = 'Save';
+                saveBtn.disabled = false;
+            }
+        }
+
+        // Ctrl+S saves code
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                saveCode();
+            }
+        });
+
+        // Load questions
+        async function loadQuestions() {
+            const res = await fetch('/api/questions');
+            questions = await res.json();
+            renderQuestionList();
+            document.getElementById('questionCounter').textContent = `0 / ${questions.length} problems`;
+        }
+
+        function getFilteredQuestions() {
+            return questions.filter(q => {
+                const matchesFilter = activeFilter === 'all' || q.difficulty === activeFilter;
+                const matchesSearch = !searchQuery ||
+                    q.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    String(q.id).includes(searchQuery);
+                return matchesFilter && matchesSearch;
+            });
+        }
+
+        function renderQuestionList() {
+            const list = document.getElementById('questionList');
+            const filtered = getFilteredQuestions();
+            list.innerHTML = filtered.map((q, idx) => `
+                <div class="question-item ${currentQuestion && currentQuestion.id === q.id ? 'active' : ''}"
+                     onclick="loadQuestion(${q.id})" title="${q.title}">
+                    <span class="q-id">${q.id}</span>
+                    <span class="q-title">${q.title}</span>
+                    <span class="q-diff ${q.difficulty}">${q.difficulty}</span>
+                    <span class="q-freq">${q.frequency.replace('%','')}</span>
+                </div>
+            `).join('');
+        }
+
+        async function loadQuestion(questionId) {
+            // Find index in full list
+            const idx = questions.findIndex(q => q.id === questionId);
+            if (idx === -1) return;
+            currentIndex = idx;
+
+            // Show loading
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('problemView').style.display = 'flex';
+
+            const res = await fetch(`/api/question/${questionId}`);
+            const data = await res.json();
+            currentQuestion = data;
+            currentTestCases = data.test_cases || [];
+            currentFunctionName = data.function_name || '';
+            currentTemplate = data.template || '';
+
+            // Update UI
+            document.getElementById('problemDesc').innerHTML = data.description;
+            document.getElementById('questionCounter').textContent = `${idx + 1} / ${questions.length} problems`;
+
+            // Reset to description tab
+            document.getElementById('descTab').classList.add('active');
+            document.getElementById('solTab').classList.remove('active');
+            document.getElementById('followUpTab').classList.remove('active');
+            document.getElementById('problemDesc').style.display = 'block';
+            document.getElementById('solutionPane').classList.remove('active');
+            document.getElementById('followUpPane').classList.remove('active');
+            document.getElementById('solutionBody').innerHTML = '<p style="color: var(--text-secondary);">Click the "Solution" tab to reveal the answer.</p>';
+
+            // Render follow-ups
+            renderFollowUps(data.follow_ups || []);
+
+            // Set editor content: load saved code if available, otherwise use template
+            editor.setValue(data.saved_code || data.template || '');
+            editor.refresh();
+
+            // Clear results
+            document.getElementById('resultsBody').innerHTML = `
+                <p style="color: var(--text-secondary); font-size: 13px; text-align: center; margin-top: 20px;">
+                    ${currentTestCases.length > 0 ? `${currentTestCases.length} test cases ready. Press Run Code or Ctrl+Enter.` : 'No test cases available for this problem.'}
+                </p>`;
+            document.getElementById('resultsSummary').textContent = '';
+
+            // Update buttons
+            document.getElementById('prevBtn').disabled = currentIndex <= 0;
+            document.getElementById('nextBtn').disabled = currentIndex >= questions.length - 1;
+
+            // Update active state in list
+            renderQuestionList();
+        }
+
+        // Next/Prev navigation
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            const nextIdx = currentIndex + 1;
+            if (nextIdx < questions.length) {
+                loadQuestion(questions[nextIdx].id);
+            }
+        });
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            const prevIdx = currentIndex - 1;
+            if (prevIdx >= 0) {
+                loadQuestion(questions[prevIdx].id);
+            }
+        });
+
+        // Save code
+        document.getElementById('saveBtn').addEventListener('click', saveCode);
+
+        // Reset code
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            if (currentTemplate) {
+                editor.setValue(currentTemplate);
+            }
+        });
+
+        // Tab switching helper
+        function switchTab(activeId) {
+            ['descTab', 'solTab', 'followUpTab'].forEach(id => {
+                document.getElementById(id).classList.toggle('active', id === activeId);
+            });
+            document.getElementById('problemDesc').style.display = activeId === 'descTab' ? 'block' : 'none';
+            document.getElementById('solutionPane').classList.toggle('active', activeId === 'solTab');
+            document.getElementById('followUpPane').classList.toggle('active', activeId === 'followUpTab');
+        }
+
+        document.getElementById('descTab').addEventListener('click', () => switchTab('descTab'));
+
+        document.getElementById('solTab').addEventListener('click', async () => {
+            switchTab('solTab');
+
+            if (!currentQuestion || !currentQuestion.has_solution) {
+                document.getElementById('solutionBody').innerHTML =
+                    '<p style="color: var(--text-secondary);">Solution not available for this problem yet.</p>';
+                return;
+            }
+
+            const res = await fetch(`/api/solution/${currentQuestion.id}`);
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('solutionBody').innerHTML = `
+                    <h4 style="color: var(--accent); margin-bottom: 12px;">Solution Code</h4>
+                    <pre><code>${escapeHtml(data.solution)}</code></pre>
+                    <div class="solution-explanation">
+                        ${marked.parse(data.explanation)}
+                    </div>
+                `;
+            }
+        });
+
+        document.getElementById('followUpTab').addEventListener('click', () => switchTab('followUpTab'));
+
+        // Render follow-up questions
+        function renderFollowUps(followUps) {
+            const body = document.getElementById('followUpBody');
+            if (!followUps || followUps.length === 0) {
+                body.innerHTML = '<p style="color: var(--text-secondary);">No follow-up questions available for this problem.</p>';
+                return;
+            }
+
+            const interviews = followUps.filter(f => f.type === 'interview');
+            const related = followUps.filter(f => f.type === 'related');
+            let html = '';
+
+            if (interviews.length > 0) {
+                html += '<div class="followup-section"><h4>Interview Follow-ups</h4>';
+                interviews.forEach((f, i) => {
+                    html += `
+                        <div class="followup-item">
+                            <div class="fq-question">${escapeHtml(f.question)}</div>
+                            <button class="fq-toggle" onclick="this.nextElementSibling.classList.toggle('visible'); this.textContent = this.nextElementSibling.classList.contains('visible') ? 'Hide Hint' : 'Show Hint';">Show Hint</button>
+                            <div class="fq-hint">${escapeHtml(f.hint)}</div>
+                        </div>`;
+                });
+                html += '</div>';
+            }
+
+            if (related.length > 0) {
+                html += '<div class="followup-section"><h4>Related Problems</h4>';
+                related.forEach(f => {
+                    html += `
+                        <div class="followup-item related">
+                            <div class="fq-question">
+                                <span class="fq-related-link" onclick="loadQuestion(${f.id})">#${f.id} ${escapeHtml(f.title)}</span>
+                            </div>
+                            <div class="fq-reason">${escapeHtml(f.reason)}</div>
+                        </div>`;
+                });
+                html += '</div>';
+            }
+
+            body.innerHTML = html;
+        }
+
+        // Run code
+        async function runCode() {
+            if (!currentTestCases.length) {
+                document.getElementById('resultsBody').innerHTML =
+                    '<p style="color: var(--red); text-align: center; margin-top: 20px;">No test cases available.</p>';
+                return;
+            }
+
+            const runBtn = document.getElementById('runBtn');
+            runBtn.disabled = true;
+            runBtn.innerHTML = '<span class="spinner"></span> Running...';
+
+            document.getElementById('resultsBody').innerHTML =
+                '<p style="color: var(--text-secondary); text-align: center; margin-top: 20px;"><span class="spinner"></span> Running test cases...</p>';
+
+            try {
+                const res = await fetch('/api/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        code: editor.getValue(),
+                        test_cases: currentTestCases,
+                        function_name: currentFunctionName,
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.error) {
+                    document.getElementById('resultsBody').innerHTML =
+                        `<p style="color: var(--red); text-align: center; margin-top: 20px;">${escapeHtml(data.error)}</p>`;
+                    return;
+                }
+
+                // Render results
+                let html = '';
+                if (data.all_passed) {
+                    html += `<div class="summary-bar all-passed">All ${data.results.length} test cases passed!</div>`;
+                } else {
+                    const passed = data.results.filter(r => r.passed).length;
+                    html += `<div class="summary-bar some-failed">${passed} / ${data.results.length} test cases passed</div>`;
+                }
+
+                data.results.forEach(r => {
+                    const statusClass = r.passed ? 'passed' : 'failed';
+                    const statusText = r.passed ? 'Passed' : 'Failed';
+                    html += `
+                        <div class="test-result ${statusClass}">
+                            <div class="tr-header">
+                                <span>Test Case ${r.test_case}</span>
+                                <span class="tr-status ${statusClass}">${statusText}</span>
+                            </div>
+                            <div class="tr-details">
+                                <div><strong>Input:</strong> ${escapeHtml(JSON.stringify(r.input))}</div>
+                                <div><strong>Expected:</strong> ${escapeHtml(JSON.stringify(r.expected))}</div>
+                                ${r.actual !== null ? `<div><strong>Output:</strong> ${escapeHtml(JSON.stringify(r.actual))}</div>` : ''}
+                                ${r.error ? `<div style="color: var(--red);"><strong>Error:</strong> ${escapeHtml(r.error)}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('resultsBody').innerHTML = html;
+                document.getElementById('resultsSummary').textContent = data.summary;
+            } catch (err) {
+                document.getElementById('resultsBody').innerHTML =
+                    `<p style="color: var(--red); text-align: center; margin-top: 20px;">Error: ${escapeHtml(err.message)}</p>`;
+            } finally {
+                runBtn.disabled = false;
+                runBtn.innerHTML = 'Run Code';
+            }
+        }
+
+        document.getElementById('runBtn').addEventListener('click', runCode);
+
+        // Search
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderQuestionList();
+        });
+
+        // Filter tabs
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                activeFilter = tab.dataset.filter;
+                renderQuestionList();
+            });
+        });
+
+        // Sidebar toggle
+        document.getElementById('sidebarToggle').addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('sidebarToggle');
+            sidebar.classList.toggle('collapsed');
+            if (sidebar.classList.contains('collapsed')) {
+                toggle.innerHTML = '&#9654;';
+            } else {
+                toggle.innerHTML = '&#9664;';
+            }
+            setTimeout(() => editor.refresh(), 250);
+        });
+
+        // Resize handle
+        const resizeHandle = document.getElementById('resizeHandle');
+        let isResizing = false;
+        resizeHandle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            const pane = document.getElementById('problemPane');
+            const container = pane.parentElement;
+            const rect = container.getBoundingClientRect();
+            const newWidth = ((e.clientX - rect.left) / rect.width * 100);
+            if (newWidth > 20 && newWidth < 70) {
+                pane.style.width = newWidth + '%';
+                editor.refresh();
+            }
+        });
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        });
+
+        // Utility
+        function escapeHtml(str) {
+            if (typeof str !== 'string') str = String(str);
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Init
+        loadQuestions();
+    </script>
+</body>
+</html>
