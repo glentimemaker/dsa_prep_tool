@@ -41,6 +41,18 @@ def save_user_solutions(solutions):
     with open(USER_SOLUTIONS_PATH, 'w', encoding='utf-8') as f:
         json.dump(solutions, f, indent=2)
 
+SOLVED_PROBLEMS_PATH = os.path.join(os.path.dirname(__file__), 'solved_problems.json')
+
+def load_solved():
+    if os.path.exists(SOLVED_PROBLEMS_PATH):
+        with open(SOLVED_PROBLEMS_PATH, 'r', encoding='utf-8') as f:
+            return set(json.load(f))
+    return set()
+
+def save_solved(solved):
+    with open(SOLVED_PROBLEMS_PATH, 'w', encoding='utf-8') as f:
+        json.dump(sorted(solved), f, indent=2)
+
 # Problem bank: test cases + solution + description for known problems
 # We pre-populate the most common ones; the frontend can request more via API
 PROBLEM_BANK = {}
@@ -1325,7 +1337,8 @@ def index():
 
 @app.route('/api/questions')
 def get_questions():
-    return jsonify(QUESTIONS)
+    solved = load_solved()
+    return jsonify([{**q, 'solved': q['id'] in solved} for q in QUESTIONS])
 
 @app.route('/api/question/<int:question_id>')
 def get_question(question_id):
@@ -1371,10 +1384,18 @@ def get_question(question_id):
 def save_code(question_id):
     data = request.get_json()
     code = data.get('code', '')
+    passed = bool(data.get('passed', False))
     solutions = load_user_solutions()
     solutions[str(question_id)] = code
     save_user_solutions(solutions)
-    return jsonify({'status': 'saved'})
+    newly_solved = False
+    if passed:
+        solved = load_solved()
+        if question_id not in solved:
+            solved.add(question_id)
+            save_solved(solved)
+            newly_solved = True
+    return jsonify({'status': 'saved', 'solved': passed, 'newly_solved': newly_solved})
 
 @app.route('/api/solution/<int:question_id>')
 def get_solution(question_id):

@@ -577,6 +577,85 @@ Output: [1,2]</pre>
 """
 )
 
+_register(695,
+    description="""<h3>695. Max Area of Island</h3>
+<p>You are given an <code>m x n</code> binary matrix <code>grid</code>. An <strong>island</strong> is a group of <code>1</code>'s (representing land) connected <strong>4-directionally</strong> (horizontal or vertical). You may assume all four edges of the grid are surrounded by water.</p>
+<p>The <strong>area</strong> of an island is the number of cells with a value <code>1</code> in the island.</p>
+<p>Return the <em>maximum area</em> of an island in <code>grid</code>. If there is no island, return <code>0</code>.</p>
+<h4>Example 1:</h4>
+<pre>Input: grid = [[0,0,1,0,0,0,0,1,0,0,0,0,0],
+               [0,0,0,0,0,0,0,1,1,1,0,0,0],
+               [0,1,1,0,1,0,0,0,0,0,0,0,0],
+               [0,1,0,0,1,1,0,0,1,0,1,0,0],
+               [0,1,0,0,1,1,0,0,1,1,1,0,0],
+               [0,0,0,0,0,0,0,0,0,0,1,0,0],
+               [0,0,0,0,0,0,0,1,1,1,0,0,0],
+               [0,0,0,0,0,0,0,1,1,0,0,0,0]]
+Output: 6
+Explanation: The answer is not 11, because the island must be connected 4-directionally.</pre>
+<h4>Example 2:</h4>
+<pre>Input: grid = [[0,0,0,0,0,0,0,0]]
+Output: 0</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>m == grid.length</li>
+<li>n == grid[i].length</li>
+<li>1 &le; m, n &le; 50</li>
+<li>grid[i][j] is either 0 or 1.</li>
+</ul>""",
+    function_name="maxAreaOfIsland",
+    template="""class Solution:
+    def maxAreaOfIsland(self, grid: list[list[int]]) -> int:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"grid": [[0,0,1,0,0,0,0,1,0,0,0,0,0],
+                            [0,0,0,0,0,0,0,1,1,1,0,0,0],
+                            [0,1,1,0,1,0,0,0,0,0,0,0,0],
+                            [0,1,0,0,1,1,0,0,1,0,1,0,0],
+                            [0,1,0,0,1,1,0,0,1,1,1,0,0],
+                            [0,0,0,0,0,0,0,0,0,0,1,0,0],
+                            [0,0,0,0,0,0,0,1,1,1,0,0,0],
+                            [0,0,0,0,0,0,0,1,1,0,0,0,0]]}, "expected": 6},
+        {"input": {"grid": [[0,0,0,0,0,0,0,0]]}, "expected": 0},
+        {"input": {"grid": [[1]]}, "expected": 1},
+        {"input": {"grid": [[1,1],[1,1]]}, "expected": 4},
+        {"input": {"grid": [[1,0,1],[0,0,0],[1,0,1]]}, "expected": 1},
+    ],
+    solution="""class Solution:
+    def maxAreaOfIsland(self, grid: list[list[int]]) -> int:
+        if not grid or not grid[0]:
+            return 0
+        rows, cols = len(grid), len(grid[0])
+
+        def dfs(r, c):
+            if r < 0 or r >= rows or c < 0 or c >= cols or grid[r][c] != 1:
+                return 0
+            grid[r][c] = 0  # mark visited in place
+            return 1 + dfs(r+1, c) + dfs(r-1, c) + dfs(r, c+1) + dfs(r, c-1)
+
+        best = 0
+        for r in range(rows):
+            for c in range(cols):
+                if grid[r][c] == 1:
+                    best = max(best, dfs(r, c))
+        return best
+""",
+    explanation="""**Approach: DFS Flood Fill**
+
+**Time:** O(m * n) | **Space:** O(m * n) recursion stack worst case
+
+1. Scan every cell. When you hit a `1`, launch a DFS that returns the size of that connected component.
+2. Inside DFS, mark visited by overwriting the cell to `0` (avoids a separate `visited` set).
+3. Each DFS returns `1 + sum(dfs neighbors)`; track the running max.
+
+**Why this works:** Each land cell is visited at most once because we zero it out on first touch, so the total work is bounded by the grid size. The 4-direction connectivity is enforced by only recursing up/down/left/right.
+
+**Alternative:** Iterative BFS with a queue avoids deep recursion if the grid is very large (Python's default recursion limit is ~1000).
+"""
+)
+
 _register(743,
     description="""<h3>743. Network Delay Time</h3>
 <p>You are given a network of <code>n</code> nodes, labeled from <code>1</code> to <code>n</code>. You are also given <code>times</code>, a list of travel times as directed edges <code>times[i] = (u<sub>i</sub>, v<sub>i</sub>, w<sub>i</sub>)</code>, where <code>u<sub>i</sub></code> is the source node, <code>v<sub>i</sub></code> is the target node, and <code>w<sub>i</sub></code> is the time it takes for a signal to travel from source to target.</p>
