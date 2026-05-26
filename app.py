@@ -53,12 +53,43 @@ def save_solved(solved):
     with open(SOLVED_PROBLEMS_PATH, 'w', encoding='utf-8') as f:
         json.dump(sorted(solved), f, indent=2)
 
+# LeetCode 75 study plan (https://leetcode.com/studyplan/leetcode-75/)
+LC75_IDS = {
+    1768, 1071, 1431, 605, 345, 151, 238, 334, 443,
+    283, 392, 11, 1679,
+    643, 1456, 1004, 1493,
+    1732, 724,
+    2215, 1207, 1657, 2352,
+    2390, 735, 394,
+    933, 649,
+    2095, 328, 206, 2130,
+    104, 872, 1448, 437, 1372, 236,
+    199, 1161,
+    700, 450,
+    841, 547, 1466, 399,
+    1926, 994,
+    215, 2336, 2542, 2462,
+    374, 2300, 162, 875,
+    17, 216,
+    1137, 746, 198, 790,
+    62, 1143, 714, 72,
+    338, 136, 1318,
+    208, 1268,
+    435, 452,
+    739, 901,
+}
+
 # Problem bank: test cases + solution + description for known problems
 # We pre-populate the most common ones; the frontend can request more via API
 PROBLEM_BANK = {}
 
-def _register(lid, description, function_name, template, test_cases, solution, explanation, follow_ups=None):
-    """Register a problem with its metadata."""
+def _register(lid, description, function_name, template, test_cases, solution, explanation, follow_ups=None, harness=None):
+    """Register a problem with its metadata.
+
+    harness (optional) lets the runner transform inputs/outputs around the user's call:
+        {"input": {"head": "linked_list"}, "output": "linked_list"}
+    Supported transforms: "linked_list" (list <-> ListNode chain).
+    """
     PROBLEM_BANK[lid] = {
         'description': description,
         'function_name': function_name,
@@ -67,6 +98,7 @@ def _register(lid, description, function_name, template, test_cases, solution, e
         'solution': solution,
         'explanation': explanation,
         'follow_ups': follow_ups or [],
+        'harness': harness,
     }
 
 # --- Problem definitions ---
@@ -1323,7 +1355,7 @@ Output: []</pre>
 )
 
 # Load additional problem batches
-for _batch_file in ['problems_batch1.py', 'problems_batch2.py', 'problems_batch3.py', 'problems_batch4.py']:
+for _batch_file in ['problems_batch1.py', 'problems_batch2.py', 'problems_batch3.py', 'problems_batch4.py', 'problems_batch5.py']:
     _batch_path = os.path.join(os.path.dirname(__file__), _batch_file)
     if os.path.exists(_batch_path):
         with open(_batch_path, encoding='utf-8') as _f:
@@ -1338,7 +1370,10 @@ def index():
 @app.route('/api/questions')
 def get_questions():
     solved = load_solved()
-    return jsonify([{**q, 'solved': q['id'] in solved} for q in QUESTIONS])
+    return jsonify([
+        {**q, 'solved': q['id'] in solved, 'lc75': q['id'] in LC75_IDS}
+        for q in QUESTIONS
+    ])
 
 @app.route('/api/question/<int:question_id>')
 def get_question(question_id):
@@ -1407,29 +1442,80 @@ def get_solution(question_id):
         'explanation': problem['explanation'],
     })
 
+_HARNESS_PREAMBLE = """
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+def _list_to_ll(lst):
+    if not lst:
+        return None
+    head = ListNode(lst[0])
+    cur = head
+    for v in lst[1:]:
+        cur.next = ListNode(v)
+        cur = cur.next
+    return head
+
+def _ll_to_list(head):
+    out = []
+    seen = set()
+    while head is not None:
+        if id(head) in seen:
+            break
+        seen.add(id(head))
+        out.append(head.val)
+        head = head.next
+    return out
+"""
+
 @app.route('/api/run', methods=['POST'])
 def run_code():
     data = request.get_json()
     code = data.get('code', '')
     test_cases = data.get('test_cases', [])
     function_name = data.get('function_name', '')
+    question_id = data.get('question_id')
 
     if not test_cases:
         return jsonify({'error': 'No test cases available for this problem'})
+
+    harness = None
+    if question_id is not None:
+        problem = PROBLEM_BANK.get(question_id)
+        if problem:
+            harness = problem.get('harness')
 
     results = []
     for i, tc in enumerate(test_cases):
         test_input = tc['input']
         expected = tc['expected']
 
+        in_transforms = (harness or {}).get('input', {})
+        out_transform = (harness or {}).get('output')
+
         # Build the test runner script
-        runner = code + "\n\n"
+        runner = ""
+        if harness:
+            runner += _HARNESS_PREAMBLE
+        runner += code + "\n\n"
         runner += "import json, sys\n"
         runner += "sol = Solution()\n"
 
-        # Build the function call using repr() for valid Python literals
-        args = ', '.join(f'{k}={repr(v)}' for k, v in test_input.items())
-        runner += f"result = sol.{function_name}({args})\n"
+        arg_parts = []
+        for k, v in test_input.items():
+            xform = in_transforms.get(k)
+            if xform == 'linked_list':
+                runner += f"_arg_{k} = _list_to_ll({repr(v)})\n"
+                arg_parts.append(f"{k}=_arg_{k}")
+            else:
+                arg_parts.append(f"{k}={repr(v)}")
+        runner += f"result = sol.{function_name}({', '.join(arg_parts)})\n"
+
+        if out_transform == 'linked_list':
+            runner += "result = _ll_to_list(result)\n"
+
         runner += "print(json.dumps(result))\n"
 
         try:
@@ -1454,20 +1540,27 @@ def run_code():
                 })
             else:
                 actual = json.loads(proc.stdout.strip())
-                # Handle multiple valid answers
+                # Handle multiple valid answers (actual is a single string, expected is a list of acceptable answers)
                 if isinstance(expected, list) and len(expected) > 0 and isinstance(expected[0], str) and not isinstance(actual, list):
                     passed = actual in expected
-                elif isinstance(expected, list) and len(expected) > 0 and isinstance(expected[0], str):
-                    passed = actual in expected
                 elif isinstance(expected, list) and isinstance(actual, list):
-                    # For list outputs, check if sorted versions match (for problems like 3Sum)
-                    try:
-                        if all(isinstance(x, list) for x in expected):
+                    if len(expected) > 0 and all(isinstance(x, list) for x in expected):
+                        # nested list output (e.g., 3Sum): order of sub-lists and within each don't matter
+                        try:
                             passed = sorted([sorted(x) for x in actual]) == sorted([sorted(x) for x in expected])
-                        else:
-                            passed = sorted(actual) == sorted(expected)
-                    except TypeError:
-                        passed = actual == expected
+                        except TypeError:
+                            passed = actual == expected
+                    elif actual == expected:
+                        passed = True
+                    else:
+                        # fall back to sorted comparison only for numeric flat lists (e.g., Two Sum indices)
+                        try:
+                            if all(isinstance(x, (int, float)) for x in expected) and all(isinstance(x, (int, float)) for x in actual):
+                                passed = sorted(actual) == sorted(expected)
+                            else:
+                                passed = False
+                        except TypeError:
+                            passed = False
                 else:
                     passed = actual == expected
 
@@ -1510,4 +1603,4 @@ def run_code():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5050)

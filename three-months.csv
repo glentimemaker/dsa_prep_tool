@@ -471,3 +471,40 @@ ID,URL,Title,Difficulty,Acceptance %,Frequency %
 3751,https://leetcode.com/problems/total-waviness-of-numbers-in-range-i,Total Waviness of Numbers in Range I,Medium,80.50%,12.50%
 3803,https://leetcode.com/problems/count-residue-prefixes,Count Residue Prefixes,Easy,65.30%,12.50%
 3821,https://leetcode.com/problems/find-nth-smallest-integer-with-k-one-bits,Find Nth Smallest Integer With K One Bits,Hard,33.90%,12.50%
+1431,https://leetcode.com/problems/kids-with-the-greatest-number-of-candies,Kids With the Greatest Number of Candies,Easy,-,-
+334,https://leetcode.com/problems/increasing-triplet-subsequence,Increasing Triplet Subsequence,Medium,-,-
+1679,https://leetcode.com/problems/max-number-of-k-sum-pairs,Max Number of K-Sum Pairs,Medium,-,-
+1456,https://leetcode.com/problems/maximum-number-of-vowels-in-a-substring-of-given-length,Maximum Number of Vowels in a Substring of Given Length,Medium,-,-
+1493,https://leetcode.com/problems/longest-subarray-of-1s-after-deleting-one-element,Longest Subarray of 1's After Deleting One Element,Medium,-,-
+1732,https://leetcode.com/problems/find-the-highest-altitude,Find the Highest Altitude,Easy,-,-
+724,https://leetcode.com/problems/find-pivot-index,Find Pivot Index,Easy,-,-
+2215,https://leetcode.com/problems/find-the-difference-of-two-arrays,Find the Difference of Two Arrays,Easy,-,-
+2352,https://leetcode.com/problems/equal-row-and-column-pairs,Equal Row and Column Pairs,Medium,-,-
+2390,https://leetcode.com/problems/removing-stars-from-a-string,Removing Stars From a String,Medium,-,-
+649,https://leetcode.com/problems/dota2-senate,Dota2 Senate,Medium,-,-
+2095,https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list,Delete the Middle Node of a Linked List,Medium,-,-
+328,https://leetcode.com/problems/odd-even-linked-list,Odd Even Linked List,Medium,-,-
+2130,https://leetcode.com/problems/maximum-twin-sum-of-a-linked-list,Maximum Twin Sum of a Linked List,Medium,-,-
+104,https://leetcode.com/problems/maximum-depth-of-binary-tree,Maximum Depth of Binary Tree,Easy,-,-
+872,https://leetcode.com/problems/leaf-similar-trees,Leaf-Similar Trees,Easy,-,-
+1448,https://leetcode.com/problems/count-good-nodes-in-binary-tree,Count Good Nodes in Binary Tree,Medium,-,-
+1372,https://leetcode.com/problems/longest-zigzag-path-in-a-binary-tree,Longest ZigZag Path in a Binary Tree,Medium,-,-
+199,https://leetcode.com/problems/binary-tree-right-side-view,Binary Tree Right Side View,Medium,-,-
+700,https://leetcode.com/problems/search-in-a-binary-search-tree,Search in a Binary Search Tree,Easy,-,-
+841,https://leetcode.com/problems/keys-and-rooms,Keys and Rooms,Medium,-,-
+547,https://leetcode.com/problems/number-of-provinces,Number of Provinces,Medium,-,-
+1466,https://leetcode.com/problems/reorder-routes-to-make-all-paths-lead-to-the-city-zero,Reorder Routes to Make All Paths Lead to the City Zero,Medium,-,-
+1926,https://leetcode.com/problems/nearest-exit-from-entrance-in-maze,Nearest Exit from Entrance in Maze,Medium,-,-
+2336,https://leetcode.com/problems/smallest-number-in-infinite-set,Smallest Number in Infinite Set,Medium,-,-
+2542,https://leetcode.com/problems/maximum-subsequence-score,Maximum Subsequence Score,Medium,-,-
+2462,https://leetcode.com/problems/total-cost-to-hire-k-workers,Total Cost to Hire K Workers,Medium,-,-
+374,https://leetcode.com/problems/guess-number-higher-or-lower,Guess Number Higher or Lower,Easy,-,-
+2300,https://leetcode.com/problems/successful-pairs-of-spells-and-potions,Successful Pairs of Spells and Potions,Medium,-,-
+746,https://leetcode.com/problems/min-cost-climbing-stairs,Min Cost Climbing Stairs,Easy,-,-
+790,https://leetcode.com/problems/domino-and-tromino-tiling,Domino and Tromino Tiling,Medium,-,-
+338,https://leetcode.com/problems/counting-bits,Counting Bits,Easy,-,-
+1318,https://leetcode.com/problems/minimum-flips-to-make-a-or-b-equal-to-c,Minimum Number of Flips to Make a OR b Equal to c,Medium,-,-
+208,https://leetcode.com/problems/implement-trie-prefix-tree,Implement Trie (Prefix Tree),Medium,-,-
+1268,https://leetcode.com/problems/search-suggestions-system,Search Suggestions System,Medium,-,-
+452,https://leetcode.com/problems/minimum-number-of-arrows-to-burst-balloons,Minimum Number of Arrows to Burst Balloons,Medium,-,-
+739,https://leetcode.com/problems/daily-temperatures,Daily Temperatures,Medium,-,-

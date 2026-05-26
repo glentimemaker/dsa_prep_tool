@@ -627,6 +627,7 @@
                 <button class="filter-tab" data-filter="Easy">Easy</button>
                 <button class="filter-tab" data-filter="Medium">Med</button>
                 <button class="filter-tab" data-filter="Hard">Hard</button>
+                <button class="filter-tab" data-filter="lc75" title="LeetCode 75 study plan">LC75</button>
                 <button class="filter-tab" data-filter="solved" title="Solved only">&#10003;</button>
                 <button class="filter-tab" data-filter="unsolved" title="Unsolved only">&#9711;</button>
             </div>
@@ -784,6 +785,7 @@
                 if (activeFilter === 'all') matchesFilter = true;
                 else if (activeFilter === 'solved') matchesFilter = !!q.solved;
                 else if (activeFilter === 'unsolved') matchesFilter = !q.solved;
+                else if (activeFilter === 'lc75') matchesFilter = !!q.lc75;
                 else matchesFilter = q.difficulty === activeFilter;
                 const matchesSearch = !searchQuery ||
                     q.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -984,6 +986,7 @@
                         code: editor.getValue(),
                         test_cases: currentTestCases,
                         function_name: currentFunctionName,
+                        question_id: currentQuestion ? currentQuestion.id : null,
                     })
                 });
 

@@ -532,10 +532,8 @@ operands in order, which is exactly what the problem asks for."""
 _register(21,
     description="""<h3>21. Merge Two Sorted Lists</h3>
 <p>You are given the heads of two sorted linked lists <code>list1</code> and <code>list2</code>.</p>
-<p>Merge the two lists into one <strong>sorted</strong> list. The list should be made by splicing
-together the nodes of the first two lists.</p>
+<p>Merge the two lists into one <strong>sorted</strong> list. The list should be made by splicing together the nodes of the first two lists.</p>
 <p>Return the head of the merged linked list.</p>
-<p><em>Note: For this practice environment, linked lists are represented as plain Python lists.</em></p>
 <h4>Example 1:</h4>
 <pre>Input: list1 = [1,2,4], list2 = [1,3,4]
 Output: [1,1,2,3,4,4]</pre>
@@ -552,8 +550,14 @@ Output: [0]</pre>
 <li>Both lists are sorted in non-decreasing order.</li>
 </ul>""",
     function_name="mergeTwoLists",
-    template="""class Solution:
-    def mergeTwoLists(self, list1: list[int], list2: list[int]) -> list[int]:
+    template="""# Definition for singly-linked list:
+# class ListNode:
+#     def __init__(self, val=0, next=None):
+#         self.val = val
+#         self.next = next
+
+class Solution:
+    def mergeTwoLists(self, list1: 'ListNode', list2: 'ListNode') -> 'ListNode':
         # Write your solution here
         pass
 """,
@@ -562,36 +566,36 @@ Output: [0]</pre>
         {"input": {"list1": [], "list2": []}, "expected": []},
         {"input": {"list1": [], "list2": [0]}, "expected": [0]},
         {"input": {"list1": [1], "list2": [2]}, "expected": [1, 2]},
+        {"input": {"list1": [1,3,5,7], "list2": [2,4,6,8]}, "expected": [1,2,3,4,5,6,7,8]},
     ],
     solution="""class Solution:
-    def mergeTwoLists(self, list1: list[int], list2: list[int]) -> list[int]:
-        result = []
-        i, j = 0, 0
-        while i < len(list1) and j < len(list2):
-            if list1[i] <= list2[j]:
-                result.append(list1[i])
-                i += 1
+    def mergeTwoLists(self, list1, list2):
+        dummy = ListNode(0)
+        tail = dummy
+        while list1 and list2:
+            if list1.val <= list2.val:
+                tail.next = list1
+                list1 = list1.next
             else:
-                result.append(list2[j])
-                j += 1
-        result.extend(list1[i:])
-        result.extend(list2[j:])
-        return result
+                tail.next = list2
+                list2 = list2.next
+            tail = tail.next
+        tail.next = list1 if list1 else list2
+        return dummy.next
 """,
-    explanation="""## Approach: Two-Pointer Merge
+    explanation="""## Approach: Splice Nodes with a Dummy Head
 
-**Time Complexity:** O(n + m), where n and m are the lengths of the two lists
-**Space Complexity:** O(n + m) for the output list
+**Time Complexity:** O(n + m) | **Space Complexity:** O(1) (no new nodes allocated)
 
 ### Steps:
-1. Use two pointers `i` and `j` starting at the beginning of each list.
-2. Compare elements at both pointers; append the smaller one to the result.
-3. Advance the pointer of the list from which we took the element.
-4. After one list is exhausted, append the remaining elements of the other.
+1. Create a `dummy` node whose `.next` will be the head of the merged list; `tail` tracks the last spliced node.
+2. While both lists have nodes, attach the one with the smaller value to `tail.next` and advance that list's pointer.
+3. When one list runs out, splice the other's remaining tail wholesale onto `tail.next`.
+4. Return `dummy.next`.
 
 ### Why this works:
-Since both input lists are already sorted, we can merge them in linear time by always
-picking the smaller of the two current elements, maintaining sorted order in the result."""
+Because both inputs are sorted, the smaller of the two front nodes is always the next correct node in the merged sequence. The dummy head removes the special case for picking the first node, and we re-use existing nodes (no allocations) — exactly what "splicing together the nodes" means in the problem.""",
+    harness={"input": {"list1": "linked_list", "list2": "linked_list"}, "output": "linked_list"}
 )
 
 # 22: Generate Parentheses (Medium)

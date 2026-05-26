@@ -1170,6 +1170,72 @@ Output: [0]</pre>
 """
 )
 
+_register(214,
+    description="""<h3>214. Shortest Palindrome</h3>
+<p>You are given a string <code>s</code>. You can convert <code>s</code> to a <strong>palindrome</strong> by adding characters in front of it.</p>
+<p>Return <em>the shortest palindrome you can find by performing this transformation</em>.</p>
+<h4>Example 1:</h4>
+<pre>Input: s = "aacecaaa"
+Output: "aaacecaaa"</pre>
+<h4>Example 2:</h4>
+<pre>Input: s = "abcd"
+Output: "dcbabcd"</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>0 &le; s.length &le; 5 * 10<sup>4</sup></li>
+<li>s consists of lowercase English letters only.</li>
+</ul>""",
+    function_name="shortestPalindrome",
+    template="""class Solution:
+    def shortestPalindrome(self, s: str) -> str:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"s": "aacecaaa"}, "expected": "aaacecaaa"},
+        {"input": {"s": "abcd"}, "expected": "dcbabcd"},
+        {"input": {"s": ""}, "expected": ""},
+        {"input": {"s": "a"}, "expected": "a"},
+        {"input": {"s": "aba"}, "expected": "aba"},
+        {"input": {"s": "abb"}, "expected": "bbabb"},
+    ],
+    solution="""class Solution:
+    def shortestPalindrome(self, s: str) -> str:
+        # KMP failure-function trick:
+        # Find the longest prefix of s that is also a palindrome,
+        # by computing the KMP failure function of s + '#' + reverse(s).
+        # The final value tells us the length of that longest palindromic prefix.
+        if not s:
+            return s
+        rev = s[::-1]
+        combined = s + '#' + rev
+        n = len(combined)
+        fail = [0] * n
+        for i in range(1, n):
+            j = fail[i - 1]
+            while j > 0 and combined[i] != combined[j]:
+                j = fail[j - 1]
+            if combined[i] == combined[j]:
+                j += 1
+            fail[i] = j
+        # fail[-1] = length of longest palindromic prefix of s
+        return rev[: len(s) - fail[-1]] + s
+""",
+    explanation="""**Approach: KMP Failure Function**
+
+**Time:** O(n) | **Space:** O(n)
+
+1. We need the longest prefix of `s` that is a palindrome — everything after it must be mirrored and prepended.
+2. Build the string `combined = s + '#' + reverse(s)`. The `#` separator prevents matches from crossing over.
+3. Compute the KMP failure function over `combined`. The last value `fail[-1]` is the length of the longest prefix of `s` that matches a suffix of `reverse(s)` — i.e., the longest palindromic prefix of `s`.
+4. The answer is `reverse(s)[: n - fail[-1]] + s`.
+
+**Why this works:** A palindromic prefix of `s` of length `k` equals the suffix of `reverse(s)` of length `k`. KMP's failure function over the concatenation finds exactly that overlap in linear time.
+
+**Alternative:** A simpler O(n^2) approach checks, for each `i` from `len(s)` down to 0, whether `s[:i]` is a palindrome — the first hit gives the longest palindromic prefix. Works for moderate inputs but TLE on the largest tests.
+"""
+)
+
 _register(221,
     description="""<h3>Maximal Square</h3>
 <p>Given an <code>m x n</code> binary <code>matrix</code> filled with <code>'0'</code>s and <code>'1'</code>s, find the largest square containing only <code>'1'</code>s and return its area.</p>
