@@ -2617,3 +2617,59 @@ Output: "bacd"</pre>""",
 Step the start index in increments of `2k`. For each window, slice-assign the first `k` characters with their reverse. Python's slice handles the "fewer than k left" cases automatically.
 """
 )
+
+_register(692,
+    description="""<h3>692. Top K Frequent Words</h3>
+<p>Given an array of strings <code>words</code> and an integer <code>k</code>, return the <code>k</code> most frequent strings.</p>
+<p>Return the answer sorted by <strong>frequency</strong> from highest to lowest. Sort words with the same frequency by their <strong>lexicographical order</strong>.</p>
+<h4>Example 1:</h4>
+<pre>Input: words = ["i","love","leetcode","i","love","coding"], k = 2
+Output: ["i","love"]
+Explanation: "i" and "love" are the two most frequent words. "i" comes before "love" due to a lower alphabetical order.</pre>
+<h4>Example 2:</h4>
+<pre>Input: words = ["the","day","is","sunny","the","the","the","sunny","is","is"], k = 4
+Output: ["the","is","sunny","day"]</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>1 &le; words.length &le; 500</li>
+<li>1 &le; words[i].length &le; 10</li>
+<li>words[i] consists of lowercase English letters.</li>
+<li>k is in the range [1, number of unique words].</li>
+</ul>""",
+    function_name="topKFrequent",
+    template="""class Solution:
+    def topKFrequent(self, words: list[str], k: int) -> list[str]:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"words": ["i","love","leetcode","i","love","coding"], "k": 2}, "expected": ["i","love"]},
+        {"input": {"words": ["the","day","is","sunny","the","the","the","sunny","is","is"], "k": 4}, "expected": ["the","is","sunny","day"]},
+        {"input": {"words": ["a","b","c"], "k": 3}, "expected": ["a","b","c"]},
+        {"input": {"words": ["aaa","aa","a"], "k": 1}, "expected": ["a"]},
+        {"input": {"words": ["car","car","bike","bike","plane"], "k": 2}, "expected": ["bike","car"]},
+    ],
+    solution="""class Solution:
+    def topKFrequent(self, words: list[str], k: int) -> list[str]:
+        import heapq
+        from collections import Counter
+        count = Counter(words)
+        # Min-heap of size k keyed by (-freq, word) so that, when we pop the
+        # "smallest", we drop the least frequent / lexicographically-largest first.
+        heap = [(-freq, word) for word, freq in count.items()]
+        heapq.heapify(heap)
+        return [heapq.heappop(heap)[1] for _ in range(k)]
+""",
+    explanation="""**Approach: Counter + Heap with Composite Key**
+
+**Time:** O(n + m log m) | **Space:** O(m), where m = number of distinct words
+
+1. Count word frequencies.
+2. Build a heap of `(-freq, word)` tuples. Negating frequency turns Python's min-heap into a max-by-frequency heap, while `word` breaks ties in ascending lexicographic order — exactly the required sort.
+3. Pop `k` times.
+
+**Why the tie-break works:** Python compares tuples element-wise. For equal `-freq`, the smaller `word` string sorts first, so it pops earlier — matching the "same frequency → lexicographical order" rule.
+
+**Alternative:** `sorted(count, key=lambda w: (-count[w], w))[:k]` is O(m log m) and arguably clearer; the size-k heap variant can be tightened to O(n + m log k) by capping the heap.
+"""
+)

@@ -1023,7 +1023,7 @@ _register(146,
 <pre>Input: ["LRUCache","put","put","get","put","get","put","get","get","get"]
        [[2],[1,1],[2,2],[1],[3,3],[2],[4,4],[1],[3],[4]]
 Output: [null,null,null,1,null,-1,null,-1,3,4]</pre>""",
-    function_name="LRUCache",
+    function_name="lruCache",
     template="""class LRUCache:
     def __init__(self, capacity: int):
         # Write your solution here
