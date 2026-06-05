@@ -508,3 +508,6 @@ ID,URL,Title,Difficulty,Acceptance %,Frequency %
 1268,https://leetcode.com/problems/search-suggestions-system,Search Suggestions System,Medium,-,-
 452,https://leetcode.com/problems/minimum-number-of-arrows-to-burst-balloons,Minimum Number of Arrows to Burst Balloons,Medium,-,-
 739,https://leetcode.com/problems/daily-temperatures,Daily Temperatures,Medium,-,-
+252,https://leetcode.com/problems/meeting-rooms,Meeting Rooms,Easy,-,-
+2101,https://leetcode.com/problems/detonate-the-maximum-bombs,Detonate the Maximum Bombs,Medium,-,-
+1804,https://leetcode.com/problems/implement-trie-ii-prefix-tree,Implement Trie II (Prefix Tree),Medium,-,-

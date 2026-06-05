@@ -156,19 +156,69 @@ Level-order traversal; the rightmost node in each level is the last one popped f
 
 _register(208,
     description="""<h3>208. Implement Trie (Prefix Tree)</h3>
-<p>A <strong>trie</strong> is a tree data structure used to efficiently store and retrieve keys in a dataset of strings.</p>
-<p>Implement <code>Trie</code> with: <code>insert(word)</code>, <code>search(word)</code>, <code>startsWith(prefix)</code>.</p>
-<h4>Example:</h4>
-<pre>Input: ["Trie","insert","search","search","startsWith","insert","search"]
-       [[],["apple"],["apple"],["app"],["app"],["app"],["app"]]
-Output: [null, null, true, false, true, null, true]</pre>
-<p><em>This problem is wrapped as a function: pass <code>operations</code> and <code>arguments</code> in parallel lists. <code>None</code> in the output marks void operations.</em></p>""",
-    function_name="trieOps",
-    template="""class Solution:
-    def trieOps(self, operations: list[str], arguments: list[list]) -> list:
-        # operations: ["Trie","insert","search","startsWith",...]
-        # arguments: [[], ["apple"], ["apple"], ["app"], ...]
+<p>A <strong>trie</strong> (pronounced as "try") or <strong>prefix tree</strong> is a tree data structure used to efficiently store and retrieve keys in a dataset of strings. There are various applications of this data structure, such as autocomplete and spellchecker.</p>
+<p>Implement the Trie class:</p>
+<ul>
+<li><code>Trie()</code> Initializes the trie object.</li>
+<li><code>void insert(String word)</code> Inserts the string <code>word</code> into the trie.</li>
+<li><code>boolean search(String word)</code> Returns <code>true</code> if the string <code>word</code> is in the trie (i.e., was inserted before), and <code>false</code> otherwise.</li>
+<li><code>boolean startsWith(String prefix)</code> Returns <code>true</code> if there is a previously inserted string <code>word</code> that has the prefix <code>prefix</code>, and <code>false</code> otherwise.</li>
+</ul>
+<h4>Example 1:</h4>
+<pre>Input
+["Trie", "insert", "search", "search", "startsWith", "insert", "search"]
+[[], ["apple"], ["apple"], ["app"], ["app"], ["app"], ["app"]]
+Output
+[null, null, true, false, true, null, true]
+
+Explanation
+Trie trie = new Trie();
+trie.insert("apple");
+trie.search("apple");   // return True
+trie.search("app");     // return False
+trie.startsWith("app"); // return True
+trie.insert("app");
+trie.search("app");     // return True</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>1 &le; word.length, prefix.length &le; 2000</li>
+<li>word and prefix consist only of lowercase English letters.</li>
+<li>At most 3 * 10<sup>4</sup> calls in total will be made to insert, search, and startsWith.</li>
+</ul>
+<p><em>The test wrapper at the bottom replays a sequence of operations and arguments — do not modify it.</em></p>""",
+    function_name="trie",
+    template="""class Trie:
+    def __init__(self):
+        # Write your solution here
         pass
+
+    def insert(self, word: str) -> None:
+        pass
+
+    def search(self, word: str) -> bool:
+        pass
+
+    def startsWith(self, prefix: str) -> bool:
+        pass
+
+
+# Test wrapper - do not modify
+class Solution:
+    def trie(self, operations: list[str], arguments: list[list]) -> list:
+        result = []
+        obj = None
+        for op, arg in zip(operations, arguments):
+            if op == "Trie":
+                obj = Trie()
+                result.append(None)
+            elif op == "insert":
+                obj.insert(arg[0])
+                result.append(None)
+            elif op == "search":
+                result.append(obj.search(arg[0]))
+            elif op == "startsWith":
+                result.append(obj.startsWith(arg[0]))
+        return result
 """,
     test_cases=[
         {"input": {"operations": ["Trie","insert","search","search","startsWith","insert","search"],
@@ -178,46 +228,78 @@ Output: [null, null, true, false, true, null, true]</pre>
          "expected": [None, None, True]},
         {"input": {"operations": ["Trie","search","startsWith"], "arguments": [[],["x"],["x"]]},
          "expected": [None, False, False]},
+        {"input": {"operations": ["Trie","insert","insert","insert","search","search","search","startsWith","startsWith"],
+                   "arguments": [[],["app"],["apple"],["beer"],["app"],["apple"],["application"],["app"],["ber"]]},
+         "expected": [None, None, None, None, True, True, False, True, False]},
+        {"input": {"operations": ["Trie","insert","search","insert","search"],
+                   "arguments": [[],["abc"],["ab"],["ab"],["ab"]]},
+         "expected": [None, None, False, None, True]},
     ],
-    solution="""class Solution:
-    def trieOps(self, operations: list[str], arguments: list[list]) -> list:
-        class Trie:
-            def __init__(self):
-                self.root = {}
-            def insert(self, w):
-                n = self.root
-                for c in w:
-                    n = n.setdefault(c, {})
-                n['$'] = True
-            def _find(self, w):
-                n = self.root
-                for c in w:
-                    if c not in n: return None
-                    n = n[c]
-                return n
-            def search(self, w):
-                n = self._find(w)
-                return bool(n and '$' in n)
-            def startsWith(self, p):
-                return self._find(p) is not None
-        trie = None
-        out = []
-        for op, args in zip(operations, arguments):
-            if op == 'Trie':
-                trie = Trie(); out.append(None)
-            elif op == 'insert':
-                trie.insert(args[0]); out.append(None)
-            elif op == 'search':
-                out.append(trie.search(args[0]))
-            elif op == 'startsWith':
-                out.append(trie.startsWith(args[0]))
-        return out
+    solution="""class Trie:
+    def __init__(self):
+        # Each node is a dict mapping char -> child node.
+        # A node also carries an `is_end` flag (stored as the sentinel key '$').
+        self.root = {}
+
+    def insert(self, word: str) -> None:
+        node = self.root
+        for ch in word:
+            if ch not in node:
+                node[ch] = {}
+            node = node[ch]
+        node['$'] = True
+
+    def _walk(self, s: str):
+        # Walk along `s`; return the deepest node reached or None if a char is missing.
+        node = self.root
+        for ch in s:
+            if ch not in node:
+                return None
+            node = node[ch]
+        return node
+
+    def search(self, word: str) -> bool:
+        node = self._walk(word)
+        return node is not None and node.get('$', False)
+
+    def startsWith(self, prefix: str) -> bool:
+        return self._walk(prefix) is not None
+
+
+class Solution:
+    def trie(self, operations: list[str], arguments: list[list]) -> list:
+        result = []
+        obj = None
+        for op, arg in zip(operations, arguments):
+            if op == "Trie":
+                obj = Trie()
+                result.append(None)
+            elif op == "insert":
+                obj.insert(arg[0])
+                result.append(None)
+            elif op == "search":
+                result.append(obj.search(arg[0]))
+            elif op == "startsWith":
+                result.append(obj.startsWith(arg[0]))
+        return result
 """,
-    explanation="""**Approach: Nested Dictionaries**
+    explanation="""**Approach: Nested Hash Map per Node**
 
-**Time:** O(L) per op, where L = word length | **Space:** O(total characters inserted)
+**Time:** O(L) per operation (L = string length) | **Space:** O(total characters inserted)
 
-Each trie node is a dict mapping char -> child dict. A sentinel `'$'` marks the end of an inserted word so we can distinguish "is a word" from "is a prefix only".
+Each trie node is a dict whose keys are the next characters. A sentinel key (`'$'`) marks a node as the end of an inserted word so we can distinguish "this is a real word" from "this is only a prefix."
+
+- **insert** walks/creates nodes for each char, then marks the last one with `$`.
+- **search** walks the word; succeeds only if the walk completes *and* the final node has `$`.
+- **startsWith** walks the prefix; succeeds if the walk completes.
+
+A shared private helper `_walk(s)` keeps `search` and `startsWith` symmetric — they only differ in whether they check `$` at the end.
+
+**Alternative — fixed-size arrays:** Using `children = [None]*26` per node (indexed by `ord(ch) - ord('a')`) avoids hash overhead and is what production implementations often use. Same asymptotic complexity, faster constants, more memory.
+
+**Follow-ups worth practicing:**
+- #211 Add and Search Word — Data structure design (supports `.` wildcards) — DFS over the trie at `.`.
+- #212 Word Search II — Build a trie of all words, then DFS the board pruning by trie node existence.
 """
 )
 
@@ -2671,5 +2753,853 @@ Output: ["the","is","sunny","day"]</pre>
 **Why the tie-break works:** Python compares tuples element-wise. For equal `-freq`, the smaller `word` string sorts first, so it pops earlier — matching the "same frequency → lexicographical order" rule.
 
 **Alternative:** `sorted(count, key=lambda w: (-count[w], w))[:k]` is O(m log m) and arguably clearer; the size-k heap variant can be tightened to O(n + m log k) by capping the heap.
+"""
+)
+
+_register(721,
+    description="""<h3>721. Accounts Merge</h3>
+<p>Given a list <code>accounts</code> where each element is a list of strings: the first element is the account holder's <strong>name</strong>, and the rest are <strong>emails</strong> representing emails of the account.</p>
+<p>Now, we would like to merge these accounts. Two accounts definitely belong to the same person if there is some common email to both accounts. Note that even if two accounts have the same name, they may belong to different people, as people may have the same name. A person can have any number of accounts initially, but all of their accounts definitely have the same name.</p>
+<p>After merging the accounts, return the accounts in the following format: the first element of each account is the name, and the rest are emails <strong>in sorted order</strong>. The accounts themselves can be returned in <strong>any order</strong>.</p>
+<h4>Example 1:</h4>
+<pre>Input: accounts =
+[["John","johnsmith@mail.com","john_newyork@mail.com"],
+ ["John","johnsmith@mail.com","john00@mail.com"],
+ ["Mary","mary@mail.com"],
+ ["John","johnnybravo@mail.com"]]
+Output:
+[["John","john00@mail.com","john_newyork@mail.com","johnsmith@mail.com"],
+ ["Mary","mary@mail.com"],
+ ["John","johnnybravo@mail.com"]]</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>1 &le; accounts.length &le; 1000</li>
+<li>2 &le; accounts[i].length &le; 10</li>
+<li>1 &le; accounts[i][j].length &le; 30</li>
+<li>accounts[i][0] consists of English letters.</li>
+<li>accounts[i][j] (for j &gt; 0) is a valid email.</li>
+</ul>""",
+    function_name="accountsMerge",
+    template="""class Solution:
+    def accountsMerge(self, accounts: list[list[str]]) -> list[list[str]]:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"accounts": [
+            ["John","johnsmith@mail.com","john_newyork@mail.com"],
+            ["John","johnsmith@mail.com","john00@mail.com"],
+            ["Mary","mary@mail.com"],
+            ["John","johnnybravo@mail.com"]]},
+         "expected": [
+            ["John","john00@mail.com","john_newyork@mail.com","johnsmith@mail.com"],
+            ["Mary","mary@mail.com"],
+            ["John","johnnybravo@mail.com"]]},
+        {"input": {"accounts": [
+            ["Gabe","Gabe0@m.co","Gabe3@m.co","Gabe1@m.co"],
+            ["Kevin","Kevin3@m.co","Kevin5@m.co","Kevin0@m.co"],
+            ["Ethan","Ethan5@m.co","Ethan4@m.co","Ethan0@m.co"],
+            ["Hanzo","Hanzo3@m.co","Hanzo1@m.co","Hanzo0@m.co"],
+            ["Fern","Fern5@m.co","Fern1@m.co","Fern0@m.co"]]},
+         "expected": [
+            ["Ethan","Ethan0@m.co","Ethan4@m.co","Ethan5@m.co"],
+            ["Gabe","Gabe0@m.co","Gabe1@m.co","Gabe3@m.co"],
+            ["Hanzo","Hanzo0@m.co","Hanzo1@m.co","Hanzo3@m.co"],
+            ["Kevin","Kevin0@m.co","Kevin3@m.co","Kevin5@m.co"],
+            ["Fern","Fern0@m.co","Fern1@m.co","Fern5@m.co"]]},
+        {"input": {"accounts": [["Alex","a@m.co"]]},
+         "expected": [["Alex","a@m.co"]]},
+        {"input": {"accounts": [
+            ["A","a@m.co","b@m.co"],
+            ["A","b@m.co","c@m.co"],
+            ["A","c@m.co","d@m.co"]]},
+         "expected": [["A","a@m.co","b@m.co","c@m.co","d@m.co"]]},
+    ],
+    solution="""class Solution:
+    def accountsMerge(self, accounts: list[list[str]]) -> list[list[str]]:
+        # Union-Find over account indices, unioned by shared email.
+        parent = list(range(len(accounts)))
+
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]  # path compression
+                x = parent[x]
+            return x
+
+        def union(a, b):
+            ra, rb = find(a), find(b)
+            if ra != rb:
+                parent[ra] = rb
+
+        email_to_acct = {}
+        for i, acct in enumerate(accounts):
+            for email in acct[1:]:
+                if email in email_to_acct:
+                    union(i, email_to_acct[email])
+                else:
+                    email_to_acct[email] = i
+
+        from collections import defaultdict
+        groups = defaultdict(set)
+        for email, i in email_to_acct.items():
+            groups[find(i)].add(email)
+
+        result = []
+        for root, emails in groups.items():
+            result.append([accounts[root][0]] + sorted(emails))
+        return result
+""",
+    explanation="""**Approach: Union-Find by Shared Email**
+
+**Time:** O(N * K * α(N) + N * K * log(N * K)) where N = number of accounts and K = avg emails per account
+**Space:** O(N * K)
+
+1. Treat each input account as a node in a union-find structure.
+2. Walk every email. The first time we see an email, record `email -> account_index`. On subsequent sightings, union the current account with the one we previously recorded — they must belong to the same person.
+3. After processing all emails, group each email by the root account it belongs to.
+4. Each root produces one merged account: the name (from any member of the group — `accounts[root][0]`) followed by sorted emails.
+
+**Why union-find:** Shared-email relationships form an undirected graph between accounts; UF computes the connected components in near-linear time and is much simpler to implement than a DFS/BFS over an explicit graph here.
+
+**Output ordering:** Emails within each account must be sorted. The order of accounts themselves can be anything — the test framework does an order-independent compare on the outer list.
+"""
+)
+
+_register(252,
+    description="""<h3>252. Meeting Rooms</h3>
+<p>Given an array of meeting time <code>intervals</code> where <code>intervals[i] = [start_i, end_i]</code>, determine if a person could attend all meetings.</p>
+<p>A meeting <code>[s, e)</code> is treated as a half-open interval: meetings that touch at endpoints (e.g. <code>[5, 10]</code> and <code>[10, 20]</code>) do <strong>not</strong> conflict.</p>
+<h4>Example 1:</h4>
+<pre>Input: intervals = [[0,30],[5,10],[15,20]]
+Output: false</pre>
+<h4>Example 2:</h4>
+<pre>Input: intervals = [[7,10],[2,4]]
+Output: true</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>0 &le; intervals.length &le; 10<sup>4</sup></li>
+<li>intervals[i].length == 2</li>
+<li>0 &le; start_i &lt; end_i &le; 10<sup>6</sup></li>
+</ul>""",
+    function_name="canAttendMeetings",
+    template="""class Solution:
+    def canAttendMeetings(self, intervals: list[list[int]]) -> bool:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"intervals": [[0,30],[5,10],[15,20]]}, "expected": False},
+        {"input": {"intervals": [[7,10],[2,4]]}, "expected": True},
+        {"input": {"intervals": []}, "expected": True},
+        {"input": {"intervals": [[1,5]]}, "expected": True},
+        {"input": {"intervals": [[5,10],[10,20]]}, "expected": True},
+        {"input": {"intervals": [[1,5],[5,8],[8,10]]}, "expected": True},
+        {"input": {"intervals": [[1,5],[4,8]]}, "expected": False},
+    ],
+    solution="""class Solution:
+    def canAttendMeetings(self, intervals: list[list[int]]) -> bool:
+        intervals.sort(key=lambda x: x[0])
+        for i in range(1, len(intervals)):
+            if intervals[i][0] < intervals[i-1][1]:
+                return False
+        return True
+""",
+    explanation="""**Approach: Sort by Start Time + Single Sweep**
+
+**Time:** O(n log n) | **Space:** O(1) extra (ignoring sort buffer)
+
+1. Sort meetings by start time.
+2. Walk consecutive pairs: if any meeting begins strictly before the previous one ends (`start_i < end_{i-1}`), there's a conflict.
+
+**Why strict <:** Meetings touch at endpoints (`[5,10]` and `[10,20]`) are treated as back-to-back, not overlapping — LeetCode's convention for this problem.
+
+**Follow-up (#253 Meeting Rooms II):** Instead of yes/no, find the minimum number of rooms needed. A min-heap of end-times handles that in O(n log n).
+"""
+)
+
+_register(2402,
+    description="""<h3>2402. Meeting Rooms III</h3>
+<p>You are given an integer <code>n</code>. There are <code>n</code> rooms numbered from <code>0</code> to <code>n - 1</code>.</p>
+<p>You are given a 2D array <code>meetings</code> where <code>meetings[i] = [start_i, end_i]</code> means that a meeting will be held during the half-closed time interval <code>[start_i, end_i)</code>. All <code>start_i</code> values are <strong>unique</strong>.</p>
+<p>Meetings are allocated to rooms in the following manner:</p>
+<ol>
+<li>Each meeting will take place in the <strong>unused</strong> room with the <strong>lowest</strong> number.</li>
+<li>If there are no available rooms, the meeting will be <strong>delayed</strong> until a room becomes free. The delayed meeting should have the <strong>same duration</strong> as the original meeting.</li>
+<li>When a room becomes unused, meetings that have an earlier original start time should be given the room.</li>
+</ol>
+<p>Return the <em>number of the room that held the most meetings</em>. If there are multiple such rooms, return the <strong>lowest</strong> number.</p>
+<h4>Example 1:</h4>
+<pre>Input: n = 2, meetings = [[0,10],[1,5],[2,7],[3,4]]
+Output: 0
+Explanation:
+- 0:  room 0 hosts [0,10).
+- 1:  room 1 hosts [1,5).
+- 2:  no rooms free, delay until room 1 frees at t=5; room 1 then hosts [5,10) (duration 5).
+- 3:  no rooms free, delay until room 0 frees at t=10; room 0 then hosts [10,11) (duration 1).
+Room 0 and 1 each held 2 meetings, so the lowest-numbered (0) wins.</pre>
+<h4>Example 2:</h4>
+<pre>Input: n = 3, meetings = [[1,20],[2,10],[3,5],[4,9],[6,8]]
+Output: 1</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>1 &le; n &le; 100</li>
+<li>1 &le; meetings.length &le; 10<sup>5</sup></li>
+<li>meetings[i].length == 2</li>
+<li>0 &le; start_i &lt; end_i &le; 5 * 10<sup>5</sup></li>
+<li>All start_i are unique.</li>
+</ul>""",
+    function_name="mostBooked",
+    template="""class Solution:
+    def mostBooked(self, n: int, meetings: list[list[int]]) -> int:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"n": 2, "meetings": [[0,10],[1,5],[2,7],[3,4]]}, "expected": 0},
+        {"input": {"n": 3, "meetings": [[1,20],[2,10],[3,5],[4,9],[6,8]]}, "expected": 1},
+        {"input": {"n": 1, "meetings": [[0,5],[10,20],[30,40]]}, "expected": 0},
+        {"input": {"n": 4, "meetings": [[18,19],[3,12],[17,19],[2,13],[7,10]]}, "expected": 0},
+        {"input": {"n": 2, "meetings": [[0,10]]}, "expected": 0},
+    ],
+    solution="""class Solution:
+    def mostBooked(self, n: int, meetings: list[list[int]]) -> int:
+        import heapq
+        # free: min-heap of available room numbers.
+        # busy: min-heap of (end_time, room_number) for rooms currently in use.
+        free = list(range(n))
+        heapq.heapify(free)
+        busy = []
+        count = [0] * n
+
+        for start, end in sorted(meetings):
+            # Release every room that's done by `start`.
+            while busy and busy[0][0] <= start:
+                _, room = heapq.heappop(busy)
+                heapq.heappush(free, room)
+
+            duration = end - start
+            if free:
+                room = heapq.heappop(free)
+                heapq.heappush(busy, (end, room))
+            else:
+                # No free room — delay this meeting until the earliest-ending one frees.
+                # Among ties on end_time the tuple sort picks the lowest room number.
+                free_at, room = heapq.heappop(busy)
+                heapq.heappush(busy, (free_at + duration, room))
+            count[room] += 1
+
+        # Tie-break: lowest-numbered room with the max count.
+        best = 0
+        for i in range(1, n):
+            if count[i] > count[best]:
+                best = i
+        return best
+""",
+    explanation="""**Approach: Two Min-Heaps (Free Rooms + Busy Rooms)**
+
+**Time:** O((m + n) log (m + n)) where m = number of meetings | **Space:** O(m + n)
+
+1. Sort meetings by start time. (Starts are unique per the problem.)
+2. Maintain two heaps:
+   - `free`: available room numbers, popped lowest first.
+   - `busy`: `(end_time, room_number)` for rooms in use; popping releases the earliest-ending room, breaking ties on the lowest room number.
+3. Before placing each meeting, drain every `busy` entry whose `end_time &le; start` back into `free`.
+4. If `free` is non-empty, pick the lowest-numbered free room. Otherwise, "delay" by reusing the earliest-ending busy room: push it back with `end_time = free_at + duration`.
+5. Increment that room's meeting count.
+6. Return the lowest-numbered room with the maximum count.
+
+**Why the tie-break is automatic:** Python's heap orders tuples lexicographically, so `(end_time, room_number)` naturally produces "earliest end, then lowest number" — exactly matching rule (3) in the problem.
+
+**Edge case:** When a room becomes free at exactly the start of the next meeting (`end == start`), we release it into `free` so the lowest-numbered preference still applies.
+"""
+)
+
+_register(2101,
+    description="""<h3>2101. Detonate the Maximum Bombs</h3>
+<p>You are given a list of bombs. Each bomb is given by <code>bombs[i] = [x_i, y_i, r_i]</code> where <code>(x_i, y_i)</code> is its location on a 2D plane and <code>r_i</code> is its blast radius.</p>
+<p>You must choose <strong>one</strong> bomb to detonate. When detonated, it will trigger all bombs that lie in its range (i.e., whose center lies <em>within or on</em> the boundary of the circle centered at the detonated bomb with its blast radius). Those bombs then detonate, triggering bombs in <em>their</em> range, and so on (chain reaction).</p>
+<p>Return the <em>maximum number of bombs</em> that can be detonated if you choose the starting bomb optimally.</p>
+<p><strong>Important:</strong> Triggering is <em>directional</em>. Bomb A can reach bomb B if B's center is within A's radius, but the reverse isn't automatic — B may not reach A if A's center is outside B's smaller radius.</p>
+<h4>Example 1:</h4>
+<pre>Input: bombs = [[2,1,3],[6,1,4]]
+Output: 2
+Explanation: Detonating either bomb will trigger the other since they are within each other's range.</pre>
+<h4>Example 2:</h4>
+<pre>Input: bombs = [[1,1,5],[10,10,5]]
+Output: 1
+Explanation: They are too far apart; detonating either triggers only itself.</pre>
+<h4>Example 3:</h4>
+<pre>Input: bombs = [[1,2,3],[2,3,1],[3,4,2],[4,5,3],[5,6,4]]
+Output: 5
+Explanation: Detonating bomb 0 triggers bombs 1, 2, 3, and 4 transitively.</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>1 &le; bombs.length &le; 100</li>
+<li>bombs[i].length == 3</li>
+<li>1 &le; x_i, y_i, r_i &le; 10<sup>5</sup></li>
+</ul>""",
+    function_name="maximumDetonation",
+    template="""class Solution:
+    def maximumDetonation(self, bombs: list[list[int]]) -> int:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"bombs": [[2,1,3],[6,1,4]]}, "expected": 2},
+        {"input": {"bombs": [[1,1,5],[10,10,5]]}, "expected": 1},
+        {"input": {"bombs": [[1,2,3],[2,3,1],[3,4,2],[4,5,3],[5,6,4]]}, "expected": 5},
+        {"input": {"bombs": [[1,1,1]]}, "expected": 1},
+        {"input": {"bombs": [[1,1,100000],[100,100,1]]}, "expected": 2},
+        {"input": {"bombs": [[1,1,5],[1,6,1],[1,12,1]]}, "expected": 2},
+    ],
+    solution="""class Solution:
+    def maximumDetonation(self, bombs: list[list[int]]) -> int:
+        from collections import defaultdict, deque
+        n = len(bombs)
+        # Build a directed reachability graph: i -> j iff bomb j's center
+        # lies inside (or on) bomb i's blast circle.
+        # Use squared distances to avoid floating-point issues.
+        adj = defaultdict(list)
+        for i in range(n):
+            xi, yi, ri = bombs[i]
+            r2 = ri * ri
+            for j in range(n):
+                if i == j:
+                    continue
+                xj, yj, _ = bombs[j]
+                dx = xi - xj
+                dy = yi - yj
+                if dx*dx + dy*dy <= r2:
+                    adj[i].append(j)
+
+        best = 0
+        for start in range(n):
+            seen = {start}
+            q = deque([start])
+            while q:
+                u = q.popleft()
+                for v in adj[u]:
+                    if v not in seen:
+                        seen.add(v)
+                        q.append(v)
+            if len(seen) > best:
+                best = len(seen)
+                if best == n:
+                    return n
+        return best
+""",
+    explanation="""**Approach: Directed Reachability + BFS from Each Bomb**
+
+**Time:** O(n^3) | **Space:** O(n^2) for the adjacency list in the worst case
+
+1. **Edge construction:** For every ordered pair `(i, j)`, draw a directed edge `i -> j` iff bomb `j`'s center is within (or on) bomb `i`'s blast radius. Use **squared distances** (`dx*dx + dy*dy &le; r_i*r_i`) — comparing in squared units avoids floating-point error and is faster than `sqrt`.
+2. **Search:** BFS from each bomb to count how many are reachable in the chain. Track the max.
+3. **Early exit:** If a start already triggers all `n` bombs, return immediately.
+
+**Why directed:** Reachability is asymmetric. A small bomb sitting inside a big bomb's blast radius will be triggered by the big one, but detonating the small bomb may not reach the big one's center.
+
+**Why not Union-Find:** UF needs symmetric edges. Adding both directions for "either side covers the other" loses correctness — you'd merge bombs that aren't actually mutually reachable.
+
+**Complexity note:** With `n &le; 100`, O(n^3) is trivially fine. For larger inputs, condensing into strongly connected components (Tarjan/Kosaraju) and counting reachable component sizes would scale better.
+"""
+)
+
+_register(1804,
+    description="""<h3>1804. Implement Trie II (Prefix Tree)</h3>
+<p>A <strong>trie</strong> (pronounced as "try") or <strong>prefix tree</strong> is a tree data structure used to efficiently store and retrieve keys in a dataset of strings. There are various applications of this data structure, such as autocomplete and spellchecker.</p>
+<p>Implement the Trie class:</p>
+<ul>
+<li><code>Trie()</code> Initializes the trie object.</li>
+<li><code>void insert(String word)</code> Inserts the string <code>word</code> into the trie.</li>
+<li><code>int countWordsEqualTo(String word)</code> Returns the number of instances of the string <code>word</code> in the trie.</li>
+<li><code>int countWordsStartingWith(String prefix)</code> Returns the number of strings in the trie that have the string <code>prefix</code> as a prefix.</li>
+<li><code>void erase(String word)</code> Erases the string <code>word</code> from the trie. It is guaranteed that the word was previously inserted.</li>
+</ul>
+<h4>Example 1:</h4>
+<pre>Input
+["Trie","insert","insert","countWordsEqualTo","countWordsStartingWith","erase","countWordsEqualTo","countWordsStartingWith","erase","countWordsStartingWith"]
+[[],["apple"],["apple"],["apple"],["app"],["apple"],["apple"],["app"],["apple"],["app"]]
+Output
+[null,null,null,2,2,null,1,1,null,0]
+
+Explanation
+Trie trie = new Trie();
+trie.insert("apple");                          // Inserts "apple".
+trie.insert("apple");                          // Inserts another "apple".
+trie.countWordsEqualTo("apple");               // 2
+trie.countWordsStartingWith("app");            // 2
+trie.erase("apple");                           // Erase one "apple".
+trie.countWordsEqualTo("apple");               // 1
+trie.countWordsStartingWith("app");            // 1
+trie.erase("apple");                           // Erase the last "apple".
+trie.countWordsStartingWith("app");            // 0</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>1 &le; word.length, prefix.length &le; 2000</li>
+<li>word and prefix consist only of lowercase English letters.</li>
+<li>At most 3 * 10<sup>4</sup> calls in total will be made to insert, countWordsEqualTo, countWordsStartingWith, and erase.</li>
+<li>It is guaranteed that for any function call to erase, the string word will exist in the trie.</li>
+</ul>
+<p><em>The test wrapper at the bottom replays a sequence of operations and arguments — do not modify it.</em></p>""",
+    function_name="trie",
+    template="""class Trie:
+    def __init__(self):
+        # Write your solution here
+        pass
+
+    def insert(self, word: str) -> None:
+        pass
+
+    def countWordsEqualTo(self, word: str) -> int:
+        pass
+
+    def countWordsStartingWith(self, prefix: str) -> int:
+        pass
+
+    def erase(self, word: str) -> None:
+        pass
+
+
+# Test wrapper - do not modify
+class Solution:
+    def trie(self, operations: list[str], arguments: list[list]) -> list:
+        result = []
+        obj = None
+        for op, arg in zip(operations, arguments):
+            if op == "Trie":
+                obj = Trie()
+                result.append(None)
+            elif op == "insert":
+                obj.insert(arg[0])
+                result.append(None)
+            elif op == "countWordsEqualTo":
+                result.append(obj.countWordsEqualTo(arg[0]))
+            elif op == "countWordsStartingWith":
+                result.append(obj.countWordsStartingWith(arg[0]))
+            elif op == "erase":
+                obj.erase(arg[0])
+                result.append(None)
+        return result
+""",
+    test_cases=[
+        {"input": {"operations": ["Trie","insert","insert","countWordsEqualTo","countWordsStartingWith","erase","countWordsEqualTo","countWordsStartingWith","erase","countWordsStartingWith"],
+                   "arguments": [[],["apple"],["apple"],["apple"],["app"],["apple"],["apple"],["app"],["apple"],["app"]]},
+         "expected": [None, None, None, 2, 2, None, 1, 1, None, 0]},
+        {"input": {"operations": ["Trie","countWordsEqualTo","countWordsStartingWith"],
+                   "arguments": [[],["a"],["a"]]},
+         "expected": [None, 0, 0]},
+        {"input": {"operations": ["Trie","insert","insert","insert","countWordsStartingWith","countWordsStartingWith","countWordsEqualTo","erase","countWordsStartingWith"],
+                   "arguments": [[],["abc"],["abcd"],["abce"],["ab"],["abc"],["abc"],["abc"],["abc"]]},
+         "expected": [None, None, None, None, 3, 3, 1, None, 2]},
+        {"input": {"operations": ["Trie","insert","erase","countWordsEqualTo","countWordsStartingWith"],
+                   "arguments": [[],["x"],["x"],["x"],["x"]]},
+         "expected": [None, None, None, 0, 0]},
+    ],
+    solution="""class _Node:
+    __slots__ = ('children', 'count', 'prefix_count')
+    def __init__(self):
+        self.children = {}
+        self.count = 0          # number of inserted words ending exactly here
+        self.prefix_count = 0   # number of inserted words passing through here
+
+
+class Trie:
+    def __init__(self):
+        self.root = _Node()
+
+    def insert(self, word: str) -> None:
+        node = self.root
+        node.prefix_count += 1
+        for ch in word:
+            if ch not in node.children:
+                node.children[ch] = _Node()
+            node = node.children[ch]
+            node.prefix_count += 1
+        node.count += 1
+
+    def _walk(self, s: str):
+        node = self.root
+        for ch in s:
+            nxt = node.children.get(ch)
+            if nxt is None:
+                return None
+            node = nxt
+        return node
+
+    def countWordsEqualTo(self, word: str) -> int:
+        node = self._walk(word)
+        return node.count if node else 0
+
+    def countWordsStartingWith(self, prefix: str) -> int:
+        node = self._walk(prefix)
+        return node.prefix_count if node else 0
+
+    def erase(self, word: str) -> None:
+        # Guaranteed the word exists; decrement counts along its path.
+        node = self.root
+        node.prefix_count -= 1
+        path = []
+        for ch in word:
+            parent = node
+            node = node.children[ch]
+            node.prefix_count -= 1
+            path.append((parent, ch, node))
+        node.count -= 1
+        # Optional cleanup: drop nodes that no longer carry any inserted words.
+        for parent, ch, child in path:
+            if child.prefix_count == 0:
+                del parent.children[ch]
+                break  # everything deeper is unreachable now
+
+
+class Solution:
+    def trie(self, operations: list[str], arguments: list[list]) -> list:
+        result = []
+        obj = None
+        for op, arg in zip(operations, arguments):
+            if op == "Trie":
+                obj = Trie()
+                result.append(None)
+            elif op == "insert":
+                obj.insert(arg[0])
+                result.append(None)
+            elif op == "countWordsEqualTo":
+                result.append(obj.countWordsEqualTo(arg[0]))
+            elif op == "countWordsStartingWith":
+                result.append(obj.countWordsStartingWith(arg[0]))
+            elif op == "erase":
+                obj.erase(arg[0])
+                result.append(None)
+        return result
+""",
+    explanation="""**Approach: Trie with Two Counters per Node**
+
+**Time:** O(L) per operation (L = word length) | **Space:** O(total characters inserted, net of erasures)
+
+Unlike #208 which only needed an end-of-word boolean, this variant needs to *count* matches. Add two counters per trie node:
+
+- `count` — how many inserted words **end** exactly at this node.
+- `prefix_count` — how many inserted words **pass through** this node.
+
+Operations:
+
+- **insert:** walk/create nodes; bump `prefix_count` at every node visited (including the root), then bump `count` at the final node.
+- **countWordsEqualTo(word):** walk the word; return `final.count` or `0` if the path doesn't exist.
+- **countWordsStartingWith(prefix):** walk the prefix; return `final.prefix_count` or `0`.
+- **erase(word):** walk down, decrementing `prefix_count` at each step; decrement `count` at the final node. The problem guarantees the word exists, so we don't need defensive checks. We also prune any node whose `prefix_count` drops to 0 to keep memory bounded under heavy churn.
+
+**Why two counters:** A trie with a single "is-end" flag (like #208) can't answer "how many" — duplicates are indistinguishable. Promoting the flag to `count` handles duplicates; `prefix_count` is what makes `countWordsStartingWith` O(L) instead of requiring a subtree walk.
+"""
+)
+
+_register(79,
+    description="""<h3>79. Word Search</h3>
+<p>Given an <code>m x n</code> grid of characters <code>board</code> and a string <code>word</code>, return <code>true</code> if <code>word</code> exists in the grid.</p>
+<p>The word can be constructed from letters of sequentially adjacent cells, where adjacent cells are horizontally or vertically neighboring. The same letter cell may not be used more than once.</p>
+<h4>Example 1:</h4>
+<pre>Input: board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], word = "ABCCED"
+Output: true</pre>
+<h4>Example 2:</h4>
+<pre>Input: board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], word = "SEE"
+Output: true</pre>
+<h4>Example 3:</h4>
+<pre>Input: board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], word = "ABCB"
+Output: false</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>m == board.length</li>
+<li>n == board[i].length</li>
+<li>1 &le; m, n &le; 6</li>
+<li>1 &le; word.length &le; 15</li>
+<li>board and word consist of only lowercase and uppercase English letters.</li>
+</ul>""",
+    function_name="exist",
+    template="""class Solution:
+    def exist(self, board: list[list[str]], word: str) -> bool:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"board": [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], "word": "ABCCED"}, "expected": True},
+        {"input": {"board": [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], "word": "SEE"}, "expected": True},
+        {"input": {"board": [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]], "word": "ABCB"}, "expected": False},
+        {"input": {"board": [["a"]], "word": "a"}, "expected": True},
+        {"input": {"board": [["a"]], "word": "b"}, "expected": False},
+        {"input": {"board": [["a","b"],["c","d"]], "word": "acdb"}, "expected": True},
+        {"input": {"board": [["a","a","a","a"],["a","a","a","a"],["a","a","a","a"]], "word": "aaaaaaaaaaaaa"}, "expected": False},
+    ],
+    solution="""class Solution:
+    def exist(self, board: list[list[str]], word: str) -> bool:
+        rows, cols = len(board), len(board[0])
+
+        def dfs(r, c, i):
+            if i == len(word):
+                return True
+            if r < 0 or r >= rows or c < 0 or c >= cols or board[r][c] != word[i]:
+                return False
+            # Mark visited by overwriting; restore on backtrack.
+            saved = board[r][c]
+            board[r][c] = '#'
+            found = (dfs(r+1, c, i+1) or
+                     dfs(r-1, c, i+1) or
+                     dfs(r, c+1, i+1) or
+                     dfs(r, c-1, i+1))
+            board[r][c] = saved
+            return found
+
+        for r in range(rows):
+            for c in range(cols):
+                if board[r][c] == word[0] and dfs(r, c, 0):
+                    return True
+        return False
+""",
+    explanation="""**Approach: DFS Backtracking with In-Place Visited Marking**
+
+**Time:** O(m * n * 4^L) worst case, where L = len(word) | **Space:** O(L) recursion depth
+
+1. Try every cell as a starting point — but only if it matches `word[0]`.
+2. From a matching cell, DFS in all four directions, advancing through the word one character per step.
+3. Mark the current cell as used by overwriting it with a sentinel (`'#'`). Restore on backtrack so the rest of the search tree sees the original board.
+
+**Why in-place marking instead of a `visited` set:** Avoids allocating O(m * n) extra memory per call and is slightly faster — set membership has hash overhead, a single-character overwrite is a direct array write. Some interviewers consider mutating input poor style; the alternative is a `set` of `(r, c)` you add on entry and discard on backtrack.
+
+**Pruning matters at scale:** Without early termination on mismatch (`board[r][c] != word[i]`), the 4-direction recursion would blow up exponentially. The early return collapses huge swaths of the search tree.
+"""
+)
+
+_register(303,
+    description="""<h3>303. Range Sum Query - Immutable</h3>
+<p>Given an integer array <code>nums</code>, handle multiple queries of the following type:</p>
+<ol>
+<li>Calculate the <strong>sum</strong> of the elements of <code>nums</code> between indices <code>left</code> and <code>right</code> <strong>inclusive</strong>, where <code>left &le; right</code>.</li>
+</ol>
+<p>Implement the <code>NumArray</code> class:</p>
+<ul>
+<li><code>NumArray(int[] nums)</code> Initializes the object with the integer array <code>nums</code>.</li>
+<li><code>int sumRange(int left, int right)</code> Returns the sum of the elements of <code>nums</code> between indices <code>left</code> and <code>right</code> inclusive (i.e. <code>nums[left] + nums[left + 1] + ... + nums[right]</code>).</li>
+</ul>
+<h4>Example 1:</h4>
+<pre>Input
+["NumArray", "sumRange", "sumRange", "sumRange"]
+[[[-2, 0, 3, -5, 2, -1]], [0, 2], [2, 5], [0, 5]]
+Output
+[null, 1, -1, -3]
+
+Explanation
+NumArray numArray = new NumArray([-2, 0, 3, -5, 2, -1]);
+numArray.sumRange(0, 2); // return (-2) + 0 + 3 = 1
+numArray.sumRange(2, 5); // return 3 + (-5) + 2 + (-1) = -1
+numArray.sumRange(0, 5); // return (-2) + 0 + 3 + (-5) + 2 + (-1) = -3</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>1 &le; nums.length &le; 10<sup>4</sup></li>
+<li>-10<sup>5</sup> &le; nums[i] &le; 10<sup>5</sup></li>
+<li>0 &le; left &le; right &lt; nums.length</li>
+<li>At most 10<sup>4</sup> calls will be made to sumRange.</li>
+</ul>
+<p><em>The test wrapper at the bottom replays a sequence of operations and arguments — do not modify it.</em></p>""",
+    function_name="numArray",
+    template="""class NumArray:
+    def __init__(self, nums: list[int]):
+        # Write your solution here
+        pass
+
+    def sumRange(self, left: int, right: int) -> int:
+        pass
+
+
+# Test wrapper - do not modify
+class Solution:
+    def numArray(self, operations: list[str], arguments: list[list]) -> list:
+        result = []
+        obj = None
+        for op, arg in zip(operations, arguments):
+            if op == "NumArray":
+                obj = NumArray(arg[0])
+                result.append(None)
+            elif op == "sumRange":
+                result.append(obj.sumRange(arg[0], arg[1]))
+        return result
+""",
+    test_cases=[
+        {"input": {"operations": ["NumArray","sumRange","sumRange","sumRange"],
+                   "arguments": [[[-2, 0, 3, -5, 2, -1]], [0, 2], [2, 5], [0, 5]]},
+         "expected": [None, 1, -1, -3]},
+        {"input": {"operations": ["NumArray","sumRange"], "arguments": [[[5]], [0, 0]]},
+         "expected": [None, 5]},
+        {"input": {"operations": ["NumArray","sumRange","sumRange","sumRange","sumRange"],
+                   "arguments": [[[1,2,3,4,5]], [0,4], [1,3], [2,2], [0,0]]},
+         "expected": [None, 15, 9, 3, 1]},
+        {"input": {"operations": ["NumArray","sumRange","sumRange"], "arguments": [[[-1,-2,-3]], [0,2], [1,1]]},
+         "expected": [None, -6, -2]},
+    ],
+    solution="""class NumArray:
+    def __init__(self, nums: list[int]):
+        # prefix[i] = sum of nums[0:i]; prefix[0] = 0 so prefix[i] - prefix[j] = sum(nums[j:i]).
+        self.prefix = [0] * (len(nums) + 1)
+        for i, x in enumerate(nums):
+            self.prefix[i + 1] = self.prefix[i] + x
+
+    def sumRange(self, left: int, right: int) -> int:
+        return self.prefix[right + 1] - self.prefix[left]
+
+
+class Solution:
+    def numArray(self, operations: list[str], arguments: list[list]) -> list:
+        result = []
+        obj = None
+        for op, arg in zip(operations, arguments):
+            if op == "NumArray":
+                obj = NumArray(arg[0])
+                result.append(None)
+            elif op == "sumRange":
+                result.append(obj.sumRange(arg[0], arg[1]))
+        return result
+""",
+    explanation="""**Approach: Prefix Sum**
+
+**Time:** O(n) preprocessing in `__init__`, O(1) per `sumRange` | **Space:** O(n)
+
+Build `prefix[i] = nums[0] + ... + nums[i-1]` once at construction (with `prefix[0] = 0` so we don't have to special-case `left == 0`). Then any range sum is `prefix[right + 1] - prefix[left]` — a single subtraction.
+
+**Why offset by 1:** Storing the empty-prefix sentinel at index 0 makes `sumRange(0, r)` use the same formula as `sumRange(l, r)` with no branching. It's a cleaner invariant than two separate cases.
+
+**Why prefix sums for "immutable":** The array doesn't change, so we pay the O(n) preprocessing cost once and amortize across many queries. With Q queries on an n-element array, total work is O(n + Q) vs. O(n * Q) for naive per-query sums. For mutable arrays, see #307 — a segment tree or Fenwick tree gets you O(log n) updates.
+"""
+)
+
+
+_register(496,
+    description="""<h3>496. Next Greater Element I</h3>
+<p>The <strong>next greater element</strong> of some element <code>x</code> in an array is the <strong>first greater</strong> element that is <strong>to the right</strong> of <code>x</code> in the same array.</p>
+<p>You are given two <strong>distinct 0-indexed</strong> integer arrays <code>nums1</code> and <code>nums2</code>, where <code>nums1</code> is a subset of <code>nums2</code>.</p>
+<p>For each <code>0 &le; i &lt; nums1.length</code>, find the index <code>j</code> such that <code>nums1[i] == nums2[j]</code> and determine the <strong>next greater element</strong> of <code>nums2[j]</code> in <code>nums2</code>. If there is no next greater element, the answer for this query is <code>-1</code>.</p>
+<p>Return an array <code>ans</code> of length <code>nums1.length</code> such that <code>ans[i]</code> is the <strong>next greater element</strong> as described above.</p>
+<h4>Example 1:</h4>
+<pre>Input: nums1 = [4,1,2], nums2 = [1,3,4,2]
+Output: [-1,3,-1]
+Explanation:
+- 4 is in nums2 at index 2. No element to the right is greater -> -1.
+- 1 is in nums2 at index 0. 3 is the first greater to the right -> 3.
+- 2 is in nums2 at index 3. No element to the right -> -1.</pre>
+<h4>Example 2:</h4>
+<pre>Input: nums1 = [2,4], nums2 = [1,2,3,4]
+Output: [3,-1]</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>1 &le; nums1.length &le; nums2.length &le; 1000</li>
+<li>0 &le; nums1[i], nums2[i] &le; 10<sup>4</sup></li>
+<li>All integers in <code>nums1</code> and <code>nums2</code> are <strong>unique</strong>.</li>
+<li>All the integers of <code>nums1</code> also appear in <code>nums2</code>.</li>
+</ul>
+<p><strong>Follow up:</strong> Could you find an O(nums1.length + nums2.length) solution?</p>""",
+    function_name="nextGreaterElement",
+    template="""class Solution:
+    def nextGreaterElement(self, nums1: list[int], nums2: list[int]) -> list[int]:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"nums1": [4, 1, 2], "nums2": [1, 3, 4, 2]}, "expected": [-1, 3, -1]},
+        {"input": {"nums1": [2, 4], "nums2": [1, 2, 3, 4]}, "expected": [3, -1]},
+        {"input": {"nums1": [1], "nums2": [1]}, "expected": [-1]},
+        {"input": {"nums1": [3, 1, 5, 7], "nums2": [3, 1, 5, 7, 9, 2, 4]}, "expected": [5, 5, 7, 9]},
+        {"input": {"nums1": [9, 8, 7], "nums2": [7, 8, 9]}, "expected": [-1, 9, 8]},
+    ],
+    solution="""class Solution:
+    def nextGreaterElement(self, nums1, nums2):
+        # Monotonic decreasing stack: pop while current beats the top, mapping each
+        # popped value to the current as its next-greater. Anything left in the stack
+        # at the end has no next-greater. Since values are unique, a value -> nextGreater
+        # dict works as a clean lookup for nums1.
+        next_greater = {}
+        stack = []  # monotonically decreasing from bottom to top
+        for x in nums2:
+            while stack and stack[-1] < x:
+                next_greater[stack.pop()] = x
+            stack.append(x)
+        return [next_greater.get(v, -1) for v in nums1]
+""",
+    explanation="""**Approach: Monotonic Decreasing Stack**
+
+**Time:** O(n + m) where n = len(nums2), m = len(nums1) | **Space:** O(n)
+
+Scan `nums2` once. Maintain a stack whose values strictly decrease from bottom to top — this is the invariant. When we see a new value `x`:
+
+- Anything on the stack smaller than `x` has just found its next-greater (it's `x`). Pop and record in a dict.
+- Push `x`. The stack remains decreasing.
+
+After the pass, anything still on the stack has no next-greater; those entries are simply absent from the dict. Build the answer by looking up each `nums1[i]` (defaulting to `-1`).
+
+**Why monotonic stack:** Each element is pushed once and popped at most once, so the total work is O(n) despite the inner `while`. Brute force is O(n*m).
+
+**Why a dict (not indices):** The problem guarantees uniqueness across both arrays, so value -> nextGreater is unambiguous. With duplicates we'd need to use indices.
+"""
+)
+
+
+_register(503,
+    description="""<h3>503. Next Greater Element II</h3>
+<p>Given a <strong>circular</strong> integer array <code>nums</code> (i.e., the next element of <code>nums[nums.length - 1]</code> is <code>nums[0]</code>), return <em>the <strong>next greater number</strong> for every element in</em> <code>nums</code>.</p>
+<p>The <strong>next greater number</strong> of a number <code>x</code> is the first greater number to its traversing-order next in the array, which means you could search circularly to find its next greater number. If it doesn't exist, return <code>-1</code> for this number.</p>
+<h4>Example 1:</h4>
+<pre>Input: nums = [1,2,1]
+Output: [2,-1,2]
+Explanation: The first 1's next greater number is 2;
+The number 2 can't find next greater number.
+The second 1's next greater number needs to search circularly, which is also 2.</pre>
+<h4>Example 2:</h4>
+<pre>Input: nums = [1,2,3,4,3]
+Output: [2,3,4,-1,4]</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>1 &le; nums.length &le; 10<sup>4</sup></li>
+<li>-10<sup>9</sup> &le; nums[i] &le; 10<sup>9</sup></li>
+</ul>""",
+    function_name="nextGreaterElements",
+    template="""class Solution:
+    def nextGreaterElements(self, nums: list[int]) -> list[int]:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"nums": [1, 2, 1]}, "expected": [2, -1, 2]},
+        {"input": {"nums": [1, 2, 3, 4, 3]}, "expected": [2, 3, 4, -1, 4]},
+        {"input": {"nums": [5, 4, 3, 2, 1]}, "expected": [-1, 5, 5, 5, 5]},
+        {"input": {"nums": [1, 1, 1, 1]}, "expected": [-1, -1, -1, -1]},
+        {"input": {"nums": [100]}, "expected": [-1]},
+        {"input": {"nums": [-1, 0, -2, 1, -3]}, "expected": [0, 1, 1, -1, -1]},
+    ],
+    solution="""class Solution:
+    def nextGreaterElements(self, nums):
+        # Circular trick: walk the array twice (2n iterations) using i % n to index.
+        # The stack holds indices (not values) so we can write the answer in place.
+        # Only push real indices on the first pass; on the second pass we just pop
+        # — anything not resolved by then truly has no next-greater.
+        n = len(nums)
+        result = [-1] * n
+        stack = []  # indices, values monotonically decreasing
+        for i in range(2 * n):
+            idx = i % n
+            while stack and nums[stack[-1]] < nums[idx]:
+                result[stack.pop()] = nums[idx]
+            if i < n:
+                stack.append(idx)
+        return result
+""",
+    explanation="""**Approach: Monotonic Stack over a Doubled Index Range**
+
+**Time:** O(n) — each index is pushed at most once and popped at most once | **Space:** O(n)
+
+The circular twist on #496 is handled by simulating two passes: iterate `i` from `0` to `2n - 1` and use `nums[i % n]`. Two laps are enough because any element that hasn't found its next-greater after one full wraparound never will.
+
+Two key choices:
+
+1. **Stack stores indices, not values.** We need to write into `result[stack.pop()]`, so the index is what matters. Comparisons are still on `nums[stack[-1]]`.
+2. **Only push during the first pass (`if i < n`).** The second pass exists solely to *resolve* indices left over from the first; pushing again would double-count and even cause infinite resolution loops in some shapes.
+
+**Why two laps suffice:** For index `j`, the worst case is the next greater sits at `j - 1` (just behind in circular order). Walking from `j` to `j + n - 1` (i.e., `2n - 1` in the doubled range when `j = n - 1`) covers every other position exactly once.
+
+**Why not store the actual element value?** With duplicates allowed, value -> nextGreater isn't unique — indexing keeps each occurrence distinct.
 """
 )
