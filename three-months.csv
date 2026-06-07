@@ -511,3 +511,7 @@ ID,URL,Title,Difficulty,Acceptance %,Frequency %
 252,https://leetcode.com/problems/meeting-rooms,Meeting Rooms,Easy,-,-
 2101,https://leetcode.com/problems/detonate-the-maximum-bombs,Detonate the Maximum Bombs,Medium,-,-
 1804,https://leetcode.com/problems/implement-trie-ii-prefix-tree,Implement Trie II (Prefix Tree),Medium,-,-
+305,https://leetcode.com/problems/number-of-islands-ii,Number of Islands II,Hard,-,-
+269,https://leetcode.com/problems/alien-dictionary,Alien Dictionary,Hard,-,-
+286,https://leetcode.com/problems/walls-and-gates,Walls and Gates,Medium,-,-
+490,https://leetcode.com/problems/the-maze,The Maze,Medium,-,-

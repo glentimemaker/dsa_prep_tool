@@ -1468,6 +1468,83 @@ def _ll_to_list(head):
         out.append(head.val)
         head = head.next
     return out
+
+class Node:
+    def __init__(self, val=0, neighbors=None):
+        self.val = val
+        self.neighbors = neighbors if neighbors is not None else []
+
+def _adjlist_to_graph(adj_list):
+    if not adj_list:
+        return None
+    n = len(adj_list)
+    nodes = [Node(i + 1) for i in range(n)]
+    for i, neighbors in enumerate(adj_list):
+        nodes[i].neighbors = [nodes[j - 1] for j in neighbors]
+    return nodes[0]
+
+def _graph_to_adjlist(node):
+    if node is None:
+        return []
+    seen = {node.val: node}
+    queue = [node]
+    while queue:
+        cur = queue.pop(0)
+        for nb in cur.neighbors:
+            if nb.val not in seen:
+                seen[nb.val] = nb
+                queue.append(nb)
+    n = max(seen.keys())
+    adj = [[] for _ in range(n)]
+    for val, nd in seen.items():
+        adj[val - 1] = sorted(nb.val for nb in nd.neighbors)
+    return adj
+
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def _list_to_tree(lst):
+    if not lst:
+        return None
+    from collections import deque as _deque
+    it = iter(lst)
+    root = TreeNode(next(it))
+    q = _deque([root])
+    for v in it:
+        node = q[0]
+        if v is not None:
+            node.left = TreeNode(v)
+            q.append(node.left)
+        try:
+            v2 = next(it)
+        except StopIteration:
+            break
+        if v2 is not None:
+            node.right = TreeNode(v2)
+            q.append(node.right)
+        q.popleft()
+    return root
+
+def _tree_to_list(root):
+    if root is None:
+        return []
+    from collections import deque as _deque
+    out = []
+    q = _deque([root])
+    while q:
+        node = q.popleft()
+        if node is None:
+            out.append(None)
+        else:
+            out.append(node.val)
+            q.append(node.left)
+            q.append(node.right)
+    while out and out[-1] is None:
+        out.pop()
+    return out
 """
 
 @app.route('/api/run', methods=['POST'])
@@ -1509,12 +1586,22 @@ def run_code():
             if xform == 'linked_list':
                 runner += f"_arg_{k} = _list_to_ll({repr(v)})\n"
                 arg_parts.append(f"{k}=_arg_{k}")
+            elif xform == 'graph':
+                runner += f"_arg_{k} = _adjlist_to_graph({repr(v)})\n"
+                arg_parts.append(f"{k}=_arg_{k}")
+            elif xform == 'tree':
+                runner += f"_arg_{k} = _list_to_tree({repr(v)})\n"
+                arg_parts.append(f"{k}=_arg_{k}")
             else:
                 arg_parts.append(f"{k}={repr(v)}")
         runner += f"result = sol.{function_name}({', '.join(arg_parts)})\n"
 
         if out_transform == 'linked_list':
             runner += "result = _ll_to_list(result)\n"
+        elif out_transform == 'graph':
+            runner += "result = _graph_to_adjlist(result)\n"
+        elif out_transform == 'tree':
+            runner += "result = _tree_to_list(result)\n"
 
         runner += "print(json.dumps(result))\n"
 
@@ -1544,14 +1631,19 @@ def run_code():
                 if isinstance(expected, list) and len(expected) > 0 and isinstance(expected[0], str) and not isinstance(actual, list):
                     passed = actual in expected
                 elif isinstance(expected, list) and isinstance(actual, list):
-                    if len(expected) > 0 and all(isinstance(x, list) for x in expected):
+                    if actual == expected:
+                        # Exact match always passes — covers grids and other order-sensitive nested outputs
+                        passed = True
+                    elif len(expected) > 0 and all(isinstance(x, list) for x in expected) and not (actual and isinstance(actual[0], list)):
+                        # actual is flat, expected is list-of-lists -> "multiple acceptable answers"
+                        # (e.g., Course Schedule II: any valid topological ordering is correct)
+                        passed = actual in expected
+                    elif len(expected) > 0 and all(isinstance(x, list) for x in expected):
                         # nested list output (e.g., 3Sum): order of sub-lists and within each don't matter
                         try:
                             passed = sorted([sorted(x) for x in actual]) == sorted([sorted(x) for x in expected])
                         except TypeError:
-                            passed = actual == expected
-                    elif actual == expected:
-                        passed = True
+                            passed = False
                     else:
                         # fall back to sorted comparison only for numeric flat lists (e.g., Two Sum indices)
                         try:

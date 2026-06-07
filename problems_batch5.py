@@ -3603,3 +3603,794 @@ Two key choices:
 **Why not store the actual element value?** With duplicates allowed, value -> nextGreater isn't unique — indexing keeps each occurrence distinct.
 """
 )
+
+
+_register(305,
+    description="""<h3>305. Number of Islands II</h3>
+<p>You are given an empty 2D binary grid <code>grid</code> of size <code>m x n</code>. The grid represents a map where <code>0</code>'s represent water and <code>1</code>'s represent land. Initially, all the cells of <code>grid</code> are water cells (i.e., all the cells are <code>0</code>'s).</p>
+<p>We may perform an add land operation which turns the water at position into a land. You are given an array <code>positions</code> where <code>positions[i] = [r<sub>i</sub>, c<sub>i</sub>]</code> is the position <code>(r<sub>i</sub>, c<sub>i</sub>)</code> at which we should operate the <code>i<sup>th</sup></code> operation.</p>
+<p>Return <em>an array of integers</em> <code>answer</code> <em>where</em> <code>answer[i]</code> <em>is the number of islands after turning the cell</em> <code>(r<sub>i</sub>, c<sub>i</sub>)</code> <em>into a land</em>.</p>
+<p>An <strong>island</strong> is surrounded by water and is formed by connecting adjacent lands horizontally or vertically. You may assume all four edges of the grid are all surrounded by water.</p>
+<h4>Example 1:</h4>
+<pre>Input: m = 3, n = 3, positions = [[0,0],[0,1],[1,2],[2,1]]
+Output: [1,1,2,3]
+Explanation:
+- Add land at (0,0): island count = 1
+- Add land at (0,1): merges with (0,0), count stays 1
+- Add land at (1,2): new isolated island, count = 2
+- Add land at (2,1): new isolated island, count = 3</pre>
+<h4>Example 2:</h4>
+<pre>Input: m = 1, n = 1, positions = [[0,0]]
+Output: [1]</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>1 &le; m, n, m * n &le; 10<sup>4</sup></li>
+<li>1 &le; positions.length &le; 10<sup>4</sup></li>
+<li>0 &le; r<sub>i</sub> &lt; m</li>
+<li>0 &le; c<sub>i</sub> &lt; n</li>
+</ul>
+<p><strong>Follow up:</strong> Could you solve it in time complexity <code>O(k log(m * n))</code>, where <code>k</code> is the length of <code>positions</code>?</p>""",
+    function_name="numIslands2",
+    template="""class Solution:
+    def numIslands2(self, m: int, n: int, positions: list[list[int]]) -> list[int]:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"m": 3, "n": 3, "positions": [[0,0],[0,1],[1,2],[2,1]]},
+         "expected": [1, 1, 2, 3]},
+        {"input": {"m": 1, "n": 1, "positions": [[0,0]]},
+         "expected": [1]},
+        {"input": {"m": 3, "n": 3, "positions": [[0,0],[0,0],[0,1]]},
+         "expected": [1, 1, 1]},
+        {"input": {"m": 3, "n": 3, "positions": [[0,1],[1,2],[2,1],[1,0],[1,1]]},
+         "expected": [1, 2, 3, 4, 1]},
+        {"input": {"m": 2, "n": 2, "positions": [[0,0],[1,1],[0,1],[1,0]]},
+         "expected": [1, 2, 1, 1]},
+        {"input": {"m": 3, "n": 3, "positions": []},
+         "expected": []},
+    ],
+    solution="""class Solution:
+    def numIslands2(self, m, n, positions):
+        # Union-Find with path compression and union-by-rank.
+        # Key insight: rather than rebuilding islands per query (O(k * m * n) flood fill),
+        # incrementally maintain island count. Each new land starts as +1 island; each union
+        # with an existing land neighbor (only if currently in a DIFFERENT component) is -1.
+        parent = [-1] * (m * n)  # -1 sentinel = still water
+        rank = [0] * (m * n)
+
+        def find(x):
+            # iterative with path compression
+            root = x
+            while parent[root] != root:
+                root = parent[root]
+            while parent[x] != root:
+                parent[x], x = root, parent[x]
+            return root
+
+        def union(a, b):
+            ra, rb = find(a), find(b)
+            if ra == rb:
+                return False
+            if rank[ra] < rank[rb]:
+                ra, rb = rb, ra
+            parent[rb] = ra
+            if rank[ra] == rank[rb]:
+                rank[ra] += 1
+            return True
+
+        result = []
+        count = 0
+        for r, c in positions:
+            idx = r * n + c
+            if parent[idx] != -1:
+                # Already land — duplicate position; count is unchanged.
+                result.append(count)
+                continue
+            parent[idx] = idx  # initialize as its own root
+            count += 1
+            for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < m and 0 <= nc < n:
+                    nidx = nr * n + nc
+                    if parent[nidx] != -1 and union(idx, nidx):
+                        count -= 1
+            result.append(count)
+        return result
+""",
+    explanation="""**Approach: Incremental Union-Find**
+
+**Time:** O(k * alpha(m * n)) per operation -> essentially O(k) total; O(k log(m * n)) is the textbook bound | **Space:** O(m * n)
+
+The brute-force approach is to re-flood-fill the entire grid after every operation — O(k * m * n). Union-Find flips this around: we don't recount islands; we maintain the count incrementally.
+
+**The trick — "diffs", not totals:**
+
+- A new land cell is, on its own, +1 island.
+- For each of the (up to 4) neighboring cells that's already land:
+  - If `union(new, neighbor)` succeeds (they were in *different* components), -1 island.
+  - If they were already in the *same* component, no change. This is what `find` is for.
+
+So `delta = 1 - successful_unions`. A cell joining 3 distinct neighbors goes +1 - 3 = -2 islands.
+
+**Implementation details:**
+
+- **`parent[i] = -1` as a "water" sentinel.** Saves a separate `seen` set. Initializing `parent[idx] = idx` is the moment a cell "exists" in the DSU.
+- **Path compression + union by rank.** Together they give near-O(1) amortized per operation (inverse Ackermann). One without the other still works but is slower.
+- **Duplicate positions.** LC allows the same cell in `positions` more than once. We must NOT add to the count; just append the current count and skip. Forgetting this is the most common bug.
+- **Row-major index `r * n + c`.** A flat parent array beats `dict[(r,c)] -> (r,c)` on both speed and memory.
+
+**Why not BFS/DFS per step?** Each step is O(m * n) flood fill, so total is O(k * m * n). With k = m * n = 10^4, that's 10^8 ops vs ~10^4 for DSU. The difference matters on the LC hard test cases.
+"""
+)
+
+
+_register(133,
+    description="""<h3>133. Clone Graph</h3>
+<p>Given a reference of a node in a <strong>connected</strong> undirected graph.</p>
+<p>Return a <a href="https://en.wikipedia.org/wiki/Object_copying#Deep_copy">deep copy</a> (clone) of the graph.</p>
+<p>Each node in the graph contains a value (<code>int</code>) and a list (<code>List[Node]</code>) of its neighbors.</p>
+<pre>class Node {
+    public int val;
+    public List&lt;Node&gt; neighbors;
+}</pre>
+<p><strong>Test case format:</strong></p>
+<p>For simplicity, each node's value is the same as the node's index (1-indexed). For example, the first node with <code>val == 1</code>, the second node with <code>val == 2</code>, and so on. The graph is represented in the test case using an adjacency list.</p>
+<p>An adjacency list is a collection of unordered lists used to represent a finite graph. Each list describes the set of neighbors of a node in the graph.</p>
+<p>The given node will always be the first node with <code>val = 1</code>. You must return the <strong>copy of the given node</strong> as a reference to the cloned graph.</p>
+<h4>Example 1:</h4>
+<pre>Input: adjList = [[2,4],[1,3],[2,4],[1,3]]
+Output: [[2,4],[1,3],[2,4],[1,3]]
+Explanation: There are 4 nodes in the graph.
+1st node (val = 1)'s neighbors are 2nd node (val = 2) and 4th node (val = 4).
+2nd node (val = 2)'s neighbors are 1st node (val = 1) and 3rd node (val = 3).
+3rd node (val = 3)'s neighbors are 2nd node (val = 2) and 4th node (val = 4).
+4th node (val = 4)'s neighbors are 1st node (val = 1) and 3rd node (val = 3).</pre>
+<h4>Example 2:</h4>
+<pre>Input: adjList = [[]]
+Output: [[]]
+Explanation: Note that the input contains one empty list. The graph consists of only one node with val = 1 and it does not have any neighbors.</pre>
+<h4>Example 3:</h4>
+<pre>Input: adjList = []
+Output: []
+Explanation: This is an empty graph, it does not have any nodes.</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>The number of nodes in the graph is in the range <code>[0, 100]</code>.</li>
+<li>1 &le; Node.val &le; 100</li>
+<li><code>Node.val</code> is unique for each node.</li>
+<li>There are no repeated edges and no self-loops in the graph.</li>
+<li>The graph is connected and all nodes can be visited starting from the given node.</li>
+</ul>
+<p><em>Note: the test harness converts the input adjacency list into <code>Node</code> objects before calling your function, and converts your returned <code>Node</code> back into an adjacency list for comparison. You write against the <code>Node</code> class as-is — neighbors lists in the comparison are sorted, so neighbor ordering doesn't matter.</em></p>""",
+    function_name="cloneGraph",
+    template="""# class Node:
+#     def __init__(self, val=0, neighbors=None):
+#         self.val = val
+#         self.neighbors = neighbors if neighbors is not None else []
+
+class Solution:
+    def cloneGraph(self, node):
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"node": [[2, 4], [1, 3], [2, 4], [1, 3]]},
+         "expected": [[2, 4], [1, 3], [2, 4], [1, 3]]},
+        {"input": {"node": [[]]}, "expected": [[]]},
+        {"input": {"node": []}, "expected": []},
+        {"input": {"node": [[2], [1]]}, "expected": [[2], [1]]},
+        {"input": {"node": [[2, 3], [1, 3], [1, 2]]},
+         "expected": [[2, 3], [1, 3], [1, 2]]},
+        {"input": {"node": [[2], [1, 3], [2, 4], [3, 5], [4]]},
+         "expected": [[2], [1, 3], [2, 4], [3, 5], [4]]},
+    ],
+    solution="""class Solution:
+    def cloneGraph(self, node):
+        # DFS with a memo dict: original_node -> cloned_node. The memo serves two
+        # purposes: (1) cycle prevention — without it, recursing into neighbors loops
+        # forever on any back-edge; (2) identity — two paths reaching the same original
+        # node must return the SAME clone, not two copies.
+        if node is None:
+            return None
+        clones = {}
+
+        def dfs(orig):
+            if orig in clones:
+                return clones[orig]
+            copy = Node(orig.val)
+            clones[orig] = copy  # MUST register before recursing into neighbors
+            copy.neighbors = [dfs(nb) for nb in orig.neighbors]
+            return copy
+
+        return dfs(node)
+""",
+    explanation="""**Approach: DFS with a memo (original -> clone)**
+
+**Time:** O(V + E) | **Space:** O(V) for the memo + recursion stack
+
+The whole problem is about preserving graph structure across the clone:
+
+1. **Don't double-create.** If two paths reach the same original node, they must yield the same clone, not two distinct copies. The memo `clones[orig] = copy` enforces this.
+2. **Don't loop forever.** Any cycle (and an undirected graph always has 2-cycles via A<->B) needs cycle detection. The memo doubles as the visited set.
+
+**The critical ordering — register clone BEFORE recursing into neighbors:**
+
+```python
+copy = Node(orig.val)
+clones[orig] = copy            # <-- this line MUST come before the next
+copy.neighbors = [dfs(nb) for nb in orig.neighbors]
+```
+
+If you set `copy.neighbors` first and THEN insert into `clones`, the recursive call for a neighbor that points back at `orig` won't find it in the memo, will create a second clone, and you'll get either infinite recursion or a corrupted graph.
+
+**BFS is equally valid:** queue + same memo. Pick BFS if recursion depth is a concern (graph with 10^5 nodes in a chain).
+
+**Why a dict keyed on the original Node object:** Identity, not equality. `dict` uses `__hash__`/`__eq__` which default to identity for objects without overrides, so each original node gets its own memo slot.
+"""
+,
+    harness={"input": {"node": "graph"}, "output": "graph"}
+)
+
+
+_register(269,
+    description="""<h3>269. Alien Dictionary</h3>
+<p>There is a new alien language that uses the English alphabet. However, the order of the letters is unknown to you.</p>
+<p>You are given a list of strings <code>words</code> from the alien language's dictionary. Now it is claimed that the strings in <code>words</code> are <strong>sorted lexicographically</strong> by the rules of this new language.</p>
+<p>If this claim is incorrect, and the given arrangement of string in <code>words</code> cannot correspond to any order of letters, return <code>""</code>.</p>
+<p>Otherwise, return <em>a string of the unique letters in the new alien language sorted in <strong>lexicographically increasing order</strong> by the new language's rules</em>. If there are multiple solutions, return <strong>any of them</strong>.</p>
+<h4>Example 1:</h4>
+<pre>Input: words = ["wrt","wrf","er","ett","rftt"]
+Output: "wertf"</pre>
+<h4>Example 2:</h4>
+<pre>Input: words = ["z","x"]
+Output: "zx"</pre>
+<h4>Example 3:</h4>
+<pre>Input: words = ["z","x","z"]
+Output: ""
+Explanation: The order is invalid, so return "".</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>1 &le; words.length &le; 100</li>
+<li>1 &le; words[i].length &le; 100</li>
+<li><code>words[i]</code> consists of only lowercase English letters.</li>
+</ul>
+<p><em>Note: tests accept any valid ordering by checking that the result respects all derived precedence constraints AND uses exactly the set of letters that appear in the input.</em></p>""",
+    function_name="alienOrder",
+    template="""class Solution:
+    def alienOrder(self, words: list[str]) -> str:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"words": ["wrt","wrf","er","ett","rftt"]}, "expected": "wertf"},
+        {"input": {"words": ["z","x"]}, "expected": "zx"},
+        {"input": {"words": ["z","x","z"]}, "expected": ""},
+        {"input": {"words": ["abc","ab"]}, "expected": ""},
+        {"input": {"words": ["ab","adc"]}, "expected": ["abcd", "abdc", "acbd", "bacd", "badc", "bcad", "bcda", "bdac", "bdca", "cabd", "cbad", "cbda"]},
+        {"input": {"words": ["ac","ab","zc","zb"]}, "expected": ["acbz", "aczb", "azcb", "cabz", "cazb", "cbaz"]},
+        {"input": {"words": ["a"]}, "expected": "a"},
+        {"input": {"words": ["aa","aa"]}, "expected": ["a"]},
+    ],
+    solution="""class Solution:
+    def alienOrder(self, words):
+        from collections import defaultdict, deque
+        # Step 1: seed in-degree for every letter that actually appears. Letters
+        # with no constraints still need to show up in the output.
+        in_degree = {c: 0 for w in words for c in w}
+        graph = defaultdict(set)
+
+        # Step 2: derive one edge per adjacent word pair from the first differing char.
+        # Edge a -> b means "a comes before b". If a word is a strict prefix of the
+        # PREVIOUS word (e.g., "abc" before "ab"), the ordering is impossible.
+        for w1, w2 in zip(words, words[1:]):
+            min_len = min(len(w1), len(w2))
+            if len(w1) > len(w2) and w1[:min_len] == w2[:min_len]:
+                return ""
+            for i in range(min_len):
+                if w1[i] != w2[i]:
+                    if w2[i] not in graph[w1[i]]:
+                        graph[w1[i]].add(w2[i])
+                        in_degree[w2[i]] += 1
+                    break
+
+        # Step 3: Kahn's BFS topological sort.
+        queue = deque([c for c in in_degree if in_degree[c] == 0])
+        order = []
+        while queue:
+            c = queue.popleft()
+            order.append(c)
+            for nb in graph[c]:
+                in_degree[nb] -= 1
+                if in_degree[nb] == 0:
+                    queue.append(nb)
+
+        # If a cycle exists, we couldn't drain every letter.
+        return "".join(order) if len(order) == len(in_degree) else ""
+""",
+    explanation="""**Approach: Build a precedence graph from adjacent word pairs, then topological sort**
+
+**Time:** O(C) where C = total characters across all words | **Space:** O(U + E), U = unique letters
+
+The algorithm is short but every step has a trap:
+
+**1. Seed in-degree for every letter that appears.** Letters with no precedence constraints (e.g., "z" in `["z","x"]` has no incoming edge from the comparison, only outgoing) still need to appear in the output. A common bug is initializing in-degree only from edges — letters with no edges get dropped silently.
+
+**2. One edge per adjacent word pair.** Compare consecutive words; the FIRST differing character gives you exactly one ordering constraint. Don't try to derive more from a single pair — `"abc"` < `"bcd"` only tells you `a < b`, not anything about `b` vs `c`.
+
+**3. The prefix-is-impossible case.** If `w1` is longer than `w2` and `w1` starts with `w2` (e.g., `"abc","ab"`), then by lexicographic rules `w2` should have come first. This input is invalid; return `""`. Easy to forget — without this check, the prefix case falls through with no edges added and you'd return a spuriously valid ordering.
+
+**4. Deduplicate edges.** Multiple word pairs can yield the same edge (e.g., `a -> b` from `("ab","bc")` and again from `("ax","bx")`). Adding it twice double-counts in-degree, making the destination unreachable. Use a `set` for adjacency or check before incrementing.
+
+**5. Kahn's BFS for the topo sort.** Start from letters with in-degree 0, drain dependents. If the output has fewer letters than the unique-letter count, there's a cycle (`""`). DFS with three-color marking is an equally valid alternative.
+
+**Why a graph at all, not just sort the letters?** The input gives you a *partial* order, not a total one. Some letter pairs are unconstrained — any valid topological sort is acceptable. That's also why the LC problem statement says "if there are multiple solutions, return any".
+"""
+)
+
+
+_register(112,
+    description="""<h3>112. Path Sum</h3>
+<p>Given the <code>root</code> of a binary tree and an integer <code>targetSum</code>, return <code>true</code> if the tree has a <strong>root-to-leaf</strong> path such that adding up all the values along the path equals <code>targetSum</code>.</p>
+<p>A <strong>leaf</strong> is a node with no children.</p>
+<h4>Example 1:</h4>
+<pre>Input: root = [5,4,8,11,null,13,4,7,2,null,null,null,1], targetSum = 22
+Output: true
+Explanation: The root-to-leaf path with sum 22 is: 5 -> 4 -> 11 -> 2.</pre>
+<h4>Example 2:</h4>
+<pre>Input: root = [1,2,3], targetSum = 5
+Output: false</pre>
+<h4>Example 3:</h4>
+<pre>Input: root = [], targetSum = 0
+Output: false</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>The number of nodes is in the range <code>[0, 5000]</code>.</li>
+<li>-1000 &le; Node.val &le; 1000</li>
+<li>-1000 &le; targetSum &le; 1000</li>
+</ul>
+<p><em>The test harness builds a <code>TreeNode</code> tree from the level-order list (with <code>None</code> for null) before calling your function. Write against real <code>TreeNode</code> objects with <code>.val</code>, <code>.left</code>, <code>.right</code>.</em></p>""",
+    function_name="hasPathSum",
+    template="""# class TreeNode:
+#     def __init__(self, val=0, left=None, right=None):
+#         self.val = val
+#         self.left = left
+#         self.right = right
+
+class Solution:
+    def hasPathSum(self, root, targetSum: int) -> bool:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"root": [5,4,8,11,None,13,4,7,2,None,None,None,1], "targetSum": 22}, "expected": True},
+        {"input": {"root": [1,2,3], "targetSum": 5}, "expected": False},
+        {"input": {"root": [], "targetSum": 0}, "expected": False},
+        {"input": {"root": [1,2], "targetSum": 1}, "expected": False},
+        {"input": {"root": [1,2], "targetSum": 3}, "expected": True},
+        {"input": {"root": [-2,None,-3], "targetSum": -5}, "expected": True},
+        {"input": {"root": [1,-2,-3,1,3,-2,None,-1], "targetSum": 3}, "expected": False},
+        {"input": {"root": [1], "targetSum": 1}, "expected": True},
+        {"input": {"root": [0,1,1], "targetSum": 1}, "expected": True},
+    ],
+    solution="""class Solution:
+    def hasPathSum(self, root, targetSum):
+        # Recursive DFS with running remainder. At each leaf, check if the
+        # remaining sum equals the leaf's own value (we haven't subtracted it yet).
+        if root is None:
+            return False
+        # Leaf: this is the only place we accept. Internal nodes can't be path ends.
+        if root.left is None and root.right is None:
+            return targetSum == root.val
+        rem = targetSum - root.val
+        return self.hasPathSum(root.left, rem) or self.hasPathSum(root.right, rem)
+""",
+    explanation="""**Approach: Recursive DFS with running remainder**
+
+**Time:** O(n) | **Space:** O(h) for recursion stack (h = tree height, worst case n)
+
+**The two traps:**
+
+1. **"Path" means root-to-LEAF.** Not root-to-any-node. So you only accept at a leaf — a node whose `left` AND `right` are both `None`. A common bug: returning early at a node whose value equals the remaining sum without checking that it's a leaf.
+2. **Empty tree returns false, even if `targetSum == 0`.** "No root-to-leaf path exists" trumps the sum check. The recursion handles this because `None` returns false immediately.
+
+**Why the remainder pattern (not accumulating)?** Either works, but subtracting from `targetSum` as we descend means the leaf-check is a single equality `remaining == node.val` rather than `accumulated + node.val == targetSum` with a separate accumulator. Less to track.
+
+**Iterative BFS alternative:** queue of `(node, remaining)` pairs. Same complexity, avoids recursion depth issues on a 5000-node degenerate (linked-list-shaped) tree.
+"""
+,
+    harness={"input": {"root": "tree"}}
+)
+
+
+_register(113,
+    description="""<h3>113. Path Sum II</h3>
+<p>Given the <code>root</code> of a binary tree and an integer <code>targetSum</code>, return <em>all <strong>root-to-leaf</strong> paths where the sum of the node values in the path equals</em> <code>targetSum</code>. Each path should be returned as a list of the node <strong>values</strong>, not node references.</p>
+<p>A <strong>root-to-leaf</strong> path is a path starting from the root and ending at any leaf node. A <strong>leaf</strong> is a node with no children.</p>
+<h4>Example 1:</h4>
+<pre>Input: root = [5,4,8,11,null,13,4,7,2,null,null,5,1], targetSum = 22
+Output: [[5,4,11,2],[5,8,4,5]]</pre>
+<h4>Example 2:</h4>
+<pre>Input: root = [1,2,3], targetSum = 5
+Output: []</pre>
+<h4>Example 3:</h4>
+<pre>Input: root = [1,2], targetSum = 0
+Output: []</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>The number of nodes is in the range <code>[0, 5000]</code>.</li>
+<li>-1000 &le; Node.val &le; 1000</li>
+<li>-1000 &le; targetSum &le; 1000</li>
+</ul>
+<p><em>The test harness builds a <code>TreeNode</code> tree from the level-order list before calling your function. Write against real <code>TreeNode</code> objects with <code>.val</code>, <code>.left</code>, <code>.right</code>.</em></p>""",
+    function_name="pathSum",
+    template="""# class TreeNode:
+#     def __init__(self, val=0, left=None, right=None):
+#         self.val = val
+#         self.left = left
+#         self.right = right
+
+class Solution:
+    def pathSum(self, root, targetSum: int) -> list[list[int]]:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"root": [5,4,8,11,None,13,4,7,2,None,None,5,1], "targetSum": 22},
+         "expected": [[5,4,11,2],[5,8,4,5]]},
+        {"input": {"root": [1,2,3], "targetSum": 5}, "expected": []},
+        {"input": {"root": [1,2], "targetSum": 0}, "expected": []},
+        {"input": {"root": [], "targetSum": 0}, "expected": []},
+        {"input": {"root": [1,2], "targetSum": 3}, "expected": [[1,2]]},
+        {"input": {"root": [1,-2,-3,1,3,-2,None,-1], "targetSum": -1}, "expected": [[1,-2,1,-1]]},
+        {"input": {"root": [0,1,1], "targetSum": 1}, "expected": [[0,1],[0,1]]},
+        {"input": {"root": [1], "targetSum": 1}, "expected": [[1]]},
+    ],
+    solution="""class Solution:
+    def pathSum(self, root, targetSum):
+        # Backtracking DFS. Maintain ONE shared path list; push on entry, pop on exit.
+        # When we find a matching leaf, snapshot the path (path.copy() / list(path)).
+        # Without the copy, the result would alias the shared list and all entries
+        # would end up identical (and empty) after backtracking.
+        result = []
+        def dfs(node, remaining, path):
+            if node is None:
+                return
+            path.append(node.val)
+            if node.left is None and node.right is None and remaining == node.val:
+                result.append(path.copy())
+            else:
+                dfs(node.left, remaining - node.val, path)
+                dfs(node.right, remaining - node.val, path)
+            path.pop()
+
+        dfs(root, targetSum, [])
+        return result
+""",
+    explanation="""**Approach: Backtracking DFS with a shared path buffer**
+
+**Time:** O(n^2) worst case | **Space:** O(h) for the recursion + path; O(n^2) if you count result storage
+
+**The path-copy invariant.** This is THE bug everyone writes first:
+
+```python
+def dfs(node, remaining, path):
+    path.append(node.val)
+    if leaf and matches:
+        result.append(path)          # BUG: aliases the shared list
+    dfs(...); dfs(...)
+    path.pop()
+```
+
+Append-without-copy stores a reference to the live `path` list. By the time the function returns, every `pop` along the way mutates that same list — every entry in `result` ends up pointing at the SAME `[]`. Fix: `result.append(path.copy())` (or `list(path)`, or pass `path + [node.val]` instead of mutating).
+
+**Why O(n^2) worst case?** A balanced tree can have ~n/2 leaves, each path of length log n -> O(n log n). A degenerate "every path leads to a match" tree could give n paths of length n -> O(n^2) just to copy them all.
+
+**Why backtrack instead of `path + [node.val]`?** Both work. The immutable variant allocates O(h) per recursive call vs O(1) for backtracking. For deep trees the difference matters.
+
+**Path = root to LEAF.** Same trap as #112 — accept only when both children are `None`.
+"""
+,
+    harness={"input": {"root": "tree"}}
+)
+
+
+_register(102,
+    description="""<h3>102. Binary Tree Level Order Traversal</h3>
+<p>Given the <code>root</code> of a binary tree, return <em>the level order traversal of its nodes' values</em>. (i.e., from left to right, level by level).</p>
+<h4>Example 1:</h4>
+<pre>Input: root = [3,9,20,null,null,15,7]
+Output: [[3],[9,20],[15,7]]</pre>
+<h4>Example 2:</h4>
+<pre>Input: root = [1]
+Output: [[1]]</pre>
+<h4>Example 3:</h4>
+<pre>Input: root = []
+Output: []</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>The number of nodes in the tree is in the range <code>[0, 2000]</code>.</li>
+<li>-1000 &le; Node.val &le; 1000</li>
+</ul>
+<p><em>The test harness builds a <code>TreeNode</code> tree from the level-order list before calling your function. Write against real <code>TreeNode</code> objects with <code>.val</code>, <code>.left</code>, <code>.right</code>.</em></p>""",
+    function_name="levelOrder",
+    template="""# class TreeNode:
+#     def __init__(self, val=0, left=None, right=None):
+#         self.val = val
+#         self.left = left
+#         self.right = right
+
+class Solution:
+    def levelOrder(self, root) -> list[list[int]]:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"root": [3,9,20,None,None,15,7]}, "expected": [[3],[9,20],[15,7]]},
+        {"input": {"root": [1]}, "expected": [[1]]},
+        {"input": {"root": []}, "expected": []},
+        {"input": {"root": [1,2,3,4,5,6,7]}, "expected": [[1],[2,3],[4,5,6,7]]},
+        {"input": {"root": [1,None,2,None,3,None,4]}, "expected": [[1],[2],[3],[4]]},
+        {"input": {"root": [1,2,None,3,None,4,None,5]}, "expected": [[1],[2],[3],[4],[5]]},
+        {"input": {"root": [0,-1,1]}, "expected": [[0],[-1,1]]},
+    ],
+    solution="""class Solution:
+    def levelOrder(self, root):
+        # BFS with a "level size" snapshot at the top of each iteration. The snapshot
+        # is the trick: it freezes the count of nodes belonging to the CURRENT level,
+        # so children appended during this iteration don't bleed into it.
+        from collections import deque
+        if root is None:
+            return []
+        result = []
+        queue = deque([root])
+        while queue:
+            level_size = len(queue)
+            level = []
+            for _ in range(level_size):
+                node = queue.popleft()
+                level.append(node.val)
+                if node.left:
+                    queue.append(node.left)
+                if node.right:
+                    queue.append(node.right)
+            result.append(level)
+        return result
+""",
+    explanation="""**Approach: BFS with per-level size snapshot**
+
+**Time:** O(n) | **Space:** O(w) where w is the maximum width of the tree (the queue never holds more than one level + the next at any moment)
+
+The whole problem is "BFS, but group output by level." Plain BFS produces a flat sequence; we need brackets. Two clean ways to do it:
+
+**1. Size-snapshot (shown above).** At the start of each iteration, `level_size = len(queue)` freezes how many nodes are on the current level. The inner `for _ in range(level_size)` drains exactly those nodes — children we append during the loop don't get pulled in because the range was fixed BEFORE we started appending.
+
+**2. Sentinel-based.** Push a `None` separator after each level. When you pop the sentinel, close the current level and push a new sentinel (if the queue isn't empty). Works, but the size-snapshot version avoids the sentinel bookkeeping and the edge case of "did I just push the last separator?"
+
+**Why not DFS with a depth parameter?** That works too — recurse with `depth`, append `node.val` to `result[depth]`, growing `result` as you go deeper. But it's preorder, not strict level-order — DFS will visit a deep node before a shallow sibling. Final output is the same when grouped by depth, but BFS more closely matches the "level by level" framing the problem asks for.
+
+**Empty tree returns `[]`, not `[[]]`.** No levels exist, so there's no list to wrap. Easy off-by-one.
+"""
+,
+    harness={"input": {"root": "tree"}}
+)
+
+
+_register(286,
+    description="""<h3>286. Walls and Gates</h3>
+<p>You are given an <code>m x n</code> grid <code>rooms</code> initialized with these three possible values.</p>
+<ul>
+<li><code>-1</code> A wall or an obstacle.</li>
+<li><code>0</code> A gate.</li>
+<li><code>INF</code> Infinity means an empty room. We use the value <code>2<sup>31</sup> - 1 = 2147483647</code> to represent <code>INF</code> as you may assume that the distance to a gate is less than <code>2147483647</code>.</li>
+</ul>
+<p>Fill each empty room with the distance to its <em>nearest gate</em>. If it is impossible to reach a gate, it should be filled with <code>INF</code>.</p>
+<h4>Example 1:</h4>
+<pre>Input: rooms = [[INF,-1,0,INF],[INF,INF,INF,-1],[INF,-1,INF,-1],[0,-1,INF,INF]]
+Output: [[3,-1,0,1],[2,2,1,-1],[1,-1,2,-1],[0,-1,3,4]]</pre>
+<h4>Example 2:</h4>
+<pre>Input: rooms = [[-1]]
+Output: [[-1]]</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>m == rooms.length</li>
+<li>n == rooms[i].length</li>
+<li>1 &le; m, n &le; 250</li>
+<li><code>rooms[i][j]</code> is <code>-1</code>, <code>0</code>, or <code>2<sup>31</sup> - 1</code>.</li>
+</ul>
+<p><em>LC asks you to modify <code>rooms</code> in-place and return nothing. For testing here, mutate in-place AND return <code>rooms</code> so the runner can verify the result.</em></p>""",
+    function_name="wallsAndGates",
+    template="""class Solution:
+    def wallsAndGates(self, rooms: list[list[int]]) -> list[list[int]]:
+        # Mutate rooms in-place, then return rooms (for the test runner).
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"rooms": [
+            [2147483647, -1, 0, 2147483647],
+            [2147483647, 2147483647, 2147483647, -1],
+            [2147483647, -1, 2147483647, -1],
+            [0, -1, 2147483647, 2147483647]
+        ]}, "expected": [
+            [3, -1, 0, 1],
+            [2, 2, 1, -1],
+            [1, -1, 2, -1],
+            [0, -1, 3, 4]
+        ]},
+        {"input": {"rooms": [[-1]]}, "expected": [[-1]]},
+        {"input": {"rooms": [[2147483647]]}, "expected": [[2147483647]]},
+        {"input": {"rooms": [[0]]}, "expected": [[0]]},
+        {"input": {"rooms": [[0, 2147483647, 2147483647, 2147483647]]},
+         "expected": [[0, 1, 2, 3]]},
+        {"input": {"rooms": [
+            [0, 2147483647],
+            [2147483647, 2147483647]
+        ]}, "expected": [
+            [0, 1],
+            [1, 2]
+        ]},
+        {"input": {"rooms": [
+            [2147483647, 2147483647],
+            [2147483647, 0]
+        ]}, "expected": [
+            [2, 1],
+            [1, 0]
+        ]},
+        {"input": {"rooms": [
+            [0, -1, 2147483647],
+            [-1, -1, 2147483647],
+            [2147483647, 2147483647, 2147483647]
+        ]}, "expected": [
+            [0, -1, 2147483647],
+            [-1, -1, 2147483647],
+            [2147483647, 2147483647, 2147483647]
+        ]},
+    ],
+    solution="""class Solution:
+    def wallsAndGates(self, rooms):
+        # Multi-source BFS from ALL gates at once. Seeding every gate into the queue
+        # before starting means each cell is reached via the SHORTEST path from
+        # SOME gate — exactly the per-cell minimum we need. No per-source loops.
+        from collections import deque
+        if not rooms or not rooms[0]:
+            return rooms
+        m, n = len(rooms), len(rooms[0])
+        INF = 2147483647
+        queue = deque()
+        for r in range(m):
+            for c in range(n):
+                if rooms[r][c] == 0:
+                    queue.append((r, c))
+        while queue:
+            r, c = queue.popleft()
+            for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                nr, nc = r + dr, c + dc
+                # Only walk into INF cells. Walls (-1) are blocked; gates (0)
+                # are sources; any cell already < INF was reached by a closer
+                # gate and shouldn't be overwritten.
+                if 0 <= nr < m and 0 <= nc < n and rooms[nr][nc] == INF:
+                    rooms[nr][nc] = rooms[r][c] + 1
+                    queue.append((nr, nc))
+        return rooms
+""",
+    explanation="""**Approach: Multi-source BFS**
+
+**Time:** O(m * n) — each cell is enqueued at most once | **Space:** O(m * n) for the queue
+
+**The key insight: seed all gates first.** The naive read of the problem is "for each empty room, BFS to the nearest gate" — that's O(m * n * (m + n)) or worse. Multi-source BFS inverts the search: push EVERY gate into the queue at distance 0, then expand outward together. Each empty cell is discovered by the FIRST wave that reaches it — which is necessarily the closest gate.
+
+**The "only walk into INF" check is doing three jobs at once:**
+
+1. **Bounds + walls** — `-1` is not `INF`, so walls block automatically; no separate wall check.
+2. **Gates as sources, not destinations** — a `0` cell is not `INF`, so we never overwrite a gate's distance with `1`.
+3. **Visited marking** — once a cell is updated to `dist`, it stops being `INF`, so a later wave from a farther gate can't overwrite it. The cell *is* its own visited marker.
+
+This collapses what would normally be a `visited` set + four separate guards into a single equality check.
+
+**Why BFS, not DFS?** BFS expands in distance order — the first time you touch a cell, you've reached it via the shortest path. DFS can revisit and would need a "current best distance" check at every step.
+
+**Watch for:**
+- Empty grid: `[]` or `[[]]`. The `if not rooms or not rooms[0]` guard handles both.
+- Unreachable rooms (walled off from every gate): they stay `INF`. The algorithm naturally produces this — no special case needed; if BFS never reaches them, they aren't touched.
+"""
+)
+
+
+_register(490,
+    description="""<h3>490. The Maze</h3>
+<p>There is a ball in a <code>maze</code> with empty spaces (represented as <code>0</code>) and walls (represented as <code>1</code>). The ball can go through the empty spaces by rolling <strong>up, down, left or right</strong>, but it won't stop rolling until hitting a wall. When the ball stops, it could choose the next direction.</p>
+<p>Given the <code>m x n</code> <code>maze</code>, the ball's <code>start</code> position and the <code>destination</code>, where <code>start = [start<sub>row</sub>, start<sub>col</sub>]</code> and <code>destination = [destination<sub>row</sub>, destination<sub>col</sub>]</code>, return <code>true</code> if the ball can stop at the destination, otherwise return <code>false</code>.</p>
+<p>You may assume that <strong>the borders of the maze are all walls</strong> (see examples).</p>
+<h4>Example 1:</h4>
+<pre>Input: maze = [[0,0,1,0,0],[0,0,0,0,0],[0,0,0,1,0],[1,1,0,1,1],[0,0,0,0,0]], start = [0,4], destination = [4,4]
+Output: true
+Explanation: One possible way is: left -> down -> left -> down -> right -> down -> right.</pre>
+<h4>Example 2:</h4>
+<pre>Input: maze = [[0,0,1,0,0],[0,0,0,0,0],[0,0,0,1,0],[1,1,0,1,1],[0,0,0,0,0]], start = [0,4], destination = [3,2]
+Output: false
+Explanation: There is no way for the ball to stop at the destination. Notice that you can pass through the destination but you cannot stop there.</pre>
+<h4>Example 3:</h4>
+<pre>Input: maze = [[0,0,0,0,0],[1,1,0,0,1],[0,0,0,0,0],[0,1,0,0,1],[0,1,0,0,0]], start = [4,3], destination = [0,1]
+Output: false</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>m == maze.length</li>
+<li>n == maze[i].length</li>
+<li>1 &le; m, n &le; 100</li>
+<li><code>maze[i][j]</code> is <code>0</code> or <code>1</code>.</li>
+<li>start.length == 2, destination.length == 2</li>
+<li>0 &le; start[0], destination[0] &lt; m</li>
+<li>0 &le; start[1], destination[1] &lt; n</li>
+<li>Both the ball and the destination exist in an empty space, and they will not be in the same position initially.</li>
+<li>The maze contains <strong>at least 2 empty spaces</strong>.</li>
+</ul>""",
+    function_name="hasPath",
+    template="""class Solution:
+    def hasPath(self, maze: list[list[int]], start: list[int], destination: list[int]) -> bool:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"maze": [[0,0,1,0,0],[0,0,0,0,0],[0,0,0,1,0],[1,1,0,1,1],[0,0,0,0,0]],
+                   "start": [0,4], "destination": [4,4]}, "expected": True},
+        {"input": {"maze": [[0,0,1,0,0],[0,0,0,0,0],[0,0,0,1,0],[1,1,0,1,1],[0,0,0,0,0]],
+                   "start": [0,4], "destination": [3,2]}, "expected": False},
+        {"input": {"maze": [[0,0,0,0,0],[1,1,0,0,1],[0,0,0,0,0],[0,1,0,0,1],[0,1,0,0,0]],
+                   "start": [4,3], "destination": [0,1]}, "expected": False},
+        {"input": {"maze": [[0,0]], "start": [0,0], "destination": [0,1]}, "expected": True},
+        {"input": {"maze": [[0,1],[0,0]], "start": [0,0], "destination": [1,1]}, "expected": True},
+        {"input": {"maze": [[0,0,0],[1,1,0],[0,0,0]], "start": [0,0], "destination": [2,0]}, "expected": True},
+        {"input": {"maze": [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+                   "start": [0,0], "destination": [2,2]}, "expected": False},
+    ],
+    solution="""class Solution:
+    def hasPath(self, maze, start, destination):
+        # BFS over STOP POINTS (not individual cells). At each pop, try all 4
+        # directions; for each, roll until we hit a wall or boundary, then enqueue
+        # the resting position if unvisited. The key shift from a normal grid BFS
+        # is that one BFS step covers an entire roll, not a single cell.
+        from collections import deque
+        m, n = len(maze), len(maze[0])
+        dest = (destination[0], destination[1])
+        visited = {(start[0], start[1])}
+        queue = deque([(start[0], start[1])])
+        directions = ((-1, 0), (1, 0), (0, -1), (0, 1))
+        while queue:
+            r, c = queue.popleft()
+            if (r, c) == dest:
+                return True
+            for dr, dc in directions:
+                # Roll until the NEXT step would hit a wall or boundary.
+                nr, nc = r, c
+                while 0 <= nr + dr < m and 0 <= nc + dc < n and maze[nr + dr][nc + dc] == 0:
+                    nr += dr
+                    nc += dc
+                if (nr, nc) not in visited:
+                    visited.add((nr, nc))
+                    queue.append((nr, nc))
+        return False
+""",
+    explanation="""**Approach: BFS over stop points**
+
+**Time:** O(m * n * max(m, n)) — each cell is a stop at most once (m * n), and each roll from that stop traverses up to max(m, n) cells | **Space:** O(m * n) for the visited set + queue
+
+**The mental model shift.** Normal grid BFS treats each cell as a state. Here, the rolling rule means a cell is only a *state* if the ball actually STOPS there. Passing through doesn't count. So:
+
+- A "state" is a stop point (a cell where the ball came to rest because the next cell would have been a wall or boundary).
+- A "transition" is a roll: pick a direction, slide all the way until forced to stop.
+
+So a single BFS step covers an entire roll, not one cell. Visited is keyed on stop points, not on cells the ball passed through.
+
+**The destination trap.** The problem says the ball must STOP at destination. A roll that *passes over* destination but stops elsewhere doesn't count as success. The clean way to enforce this: only check `(r, c) == dest` when you POP from the queue (i.e., a confirmed stop point) — never mid-roll.
+
+**The rolling inner loop.** The condition `maze[nr + dr][nc + dc] == 0` peeks at the NEXT cell:
+
+- If the next cell is a wall or out of bounds, we stop. `(nr, nc)` is the resting cell — which is still `0` (empty), because we only advanced into `0` cells.
+- The loop terminates when we can't advance further. We do NOT include the wall cell in our stop position.
+
+Off-by-one common bug: `while maze[nr][nc] == 0: nr += dr; nc += dc` — this advances past the wall and indexes out of bounds. Always peek before stepping.
+
+**Why BFS over DFS?** Either works for this reachability problem. BFS gives you the fewest-rolls path "for free" if you wanted it (this is exactly #505 Maze II's setup but with cost instead of distance). DFS uses less memory.
+"""
+)
