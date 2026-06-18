@@ -4394,3 +4394,191 @@ Off-by-one common bug: `while maze[nr][nc] == 0: nr += dr; nc += dc` — this ad
 **Why BFS over DFS?** Either works for this reachability problem. BFS gives you the fewest-rolls path "for free" if you wanted it (this is exactly #505 Maze II's setup but with cost instead of distance). DFS uses less memory.
 """
 )
+
+
+_register(767,
+    description="""<h3>767. Reorganize String</h3>
+<p>Given a string <code>s</code>, rearrange the characters of <code>s</code> so that any two adjacent characters are not the same.</p>
+<p>Return <em>any possible rearrangement of</em> <code>s</code> <em>or return</em> <code>""</code> <em>if not possible</em>.</p>
+<h4>Example 1:</h4>
+<pre>Input: s = "aab"
+Output: "aba"</pre>
+<h4>Example 2:</h4>
+<pre>Input: s = "aaab"
+Output: ""</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>1 &le; s.length &le; 500</li>
+<li><code>s</code> consists of lowercase English letters.</li>
+</ul>""",
+    function_name="reorganizeString",
+    template="""class Solution:
+    def reorganizeString(self, s: str) -> str:
+        # Write your solution here
+        pass
+""",
+    test_cases=[
+        {"input": {"s": "aab"}, "expected": "aba"},
+        {"input": {"s": "aaab"}, "expected": ""},
+        {"input": {"s": "aaaa"}, "expected": ""},
+        {"input": {"s": "a"}, "expected": "a"},
+        {"input": {"s": "ab"}, "expected": ["ab", "ba"]},
+        {"input": {"s": "aabb"}, "expected": ["abab", "baba"]},
+        {"input": {"s": "aaabbb"}, "expected": ["ababab", "bababa"]},
+        {"input": {"s": "vvvlo"}, "expected": ["vlvov", "vovlv"]},
+        {"input": {"s": "baaba"}, "expected": "ababa"},
+        {"input": {"s": "aaabc"}, "expected": ["abaca", "acaba"]},
+        {"input": {"s": "zhmyo"}, "expected": ["hmoyz", "hmozy", "hmyoz", "hmyzo", "hmzoy", "hmzyo", "homyz", "homzy", "hoymz", "hoyzm", "hozmy", "hozym", "hymoz", "hymzo", "hyomz", "hyozm", "hyzmo", "hyzom", "hzmoy", "hzmyo", "hzomy", "hzoym", "hzymo", "hzyom", "mhoyz", "mhozy", "mhyoz", "mhyzo", "mhzoy", "mhzyo", "mohyz", "mohzy", "moyhz", "moyzh", "mozhy", "mozyh", "myhoz", "myhzo", "myohz", "myozh", "myzho", "myzoh", "mzhoy", "mzhyo", "mzohy", "mzoyh", "mzyho", "mzyoh", "ohmyz", "ohmzy", "ohymz", "ohyzm", "ohzmy", "ohzym", "omhyz", "omhzy", "omyhz", "omyzh", "omzhy", "omzyh", "oyhmz", "oyhzm", "oymhz", "oymzh", "oyzhm", "oyzmh", "ozhmy", "ozhym", "ozmhy", "ozmyh", "ozyhm", "ozymh", "yhmoz", "yhmzo", "yhomz", "yhozm", "yhzmo", "yhzom", "ymhoz", "ymhzo", "ymohz", "ymozh", "ymzho", "ymzoh", "yohmz", "yohzm", "yomhz", "yomzh", "yozhm", "yozmh", "yzhmo", "yzhom", "yzmho", "yzmoh", "yzohm", "yzomh", "zhmoy", "zhmyo", "zhomy", "zhoym", "zhymo", "zhyom", "zmhoy", "zmhyo", "zmohy", "zmoyh", "zmyho", "zmyoh", "zohmy", "zohym", "zomhy", "zomyh", "zoyhm", "zoymh", "zyhmo", "zyhom", "zymho", "zymoh", "zyohm", "zyomh"]},
+    ],
+    solution="""class Solution:
+    def reorganizeString(self, s):
+        # Greedy with a max-heap. At each step, pop the TWO most frequent chars and
+        # place them adjacently (they're different by construction, so safe), then
+        # push back any with remaining count. Pairing two-at-a-time guarantees we
+        # never place the same char twice in a row even when one char dominates.
+        import heapq
+        from collections import Counter
+        count = Counter(s)
+        # Feasibility check: if any char appears > (n+1)//2 times, ceil-half of the
+        # slots, it's impossible — at least two of them MUST end up adjacent.
+        if max(count.values()) > (len(s) + 1) // 2:
+            return ""
+        # Negate counts so heapq (a min-heap) behaves as a max-heap.
+        heap = [(-cnt, ch) for ch, cnt in count.items()]
+        heapq.heapify(heap)
+        result = []
+        while len(heap) >= 2:
+            cnt1, ch1 = heapq.heappop(heap)
+            cnt2, ch2 = heapq.heappop(heap)
+            result.append(ch1)
+            result.append(ch2)
+            if cnt1 + 1 < 0:
+                heapq.heappush(heap, (cnt1 + 1, ch1))
+            if cnt2 + 1 < 0:
+                heapq.heappush(heap, (cnt2 + 1, ch2))
+        if heap:
+            # Exactly one char left (odd-length input). It's safe to append because
+            # the feasibility check guaranteed it appears at most once at this point.
+            result.append(heap[0][1])
+        return "".join(result)
+""",
+    explanation="""**Approach: Greedy with a max-heap (pop two at a time)**
+
+**Time:** O(n log k) where k = unique chars (<= 26 for lowercase) | **Space:** O(k)
+
+**The feasibility check upfront.** If any character appears more than `ceil(n / 2)` times, no valid arrangement exists. The pigeonhole argument: place that character into every other slot — that's `ceil(n / 2)` slots maximum. Any more and two of them MUST land adjacent. So `max(count.values()) > (len(s) + 1) // 2` -> return `""` immediately.
+
+**The two-at-a-time trick.** This is what makes it work. Pop the two highest-count chars, append them both, then push back any with remaining count. Why two and not one?
+
+- One-at-a-time: pop the most-frequent, append, push back, repeat. Bug: you could pop the same char twice in a row if it dominates. You'd then need a "last placed" guard, branching to the second-most-frequent if it equals the previous. Messy.
+- Two-at-a-time: by construction the pair are distinct (you popped them from different heap slots). Appending them produces two adjacent-different characters. Nothing to guard against.
+
+**The odd-tail case.** When one char remains in the heap at loop end (heap-size went from 2 to 1 across the last pop), append it. The feasibility check guarantees this remaining count is exactly 1 — otherwise it would have been ≥ 2 when popped, meaning > `ceil(n/2)` originally.
+
+**Why a max-heap?** Always placing the most-frequent first prevents painting yourself into a corner. If you defer a high-count char too long, you'll run out of "other" chars to alternate with and be forced to place duplicates adjacently. Greedy-by-frequency is the standard pattern for this family ("rearrange-with-constraint" problems also includes #621 Task Scheduler and #621-variants).
+
+**Alternative — counting sort placement:** Sort chars by count desc, fill EVEN indices first (0, 2, 4, ...) with the most-frequent, then ODD indices (1, 3, 5, ...) with the rest. This is O(n) and equally valid for this problem; the heap approach generalizes more easily to variants like "no two same within k positions."
+"""
+)
+
+
+_register(156,
+    description="""<h3>156. Binary Tree Upside Down</h3>
+<p>Given the <code>root</code> of a binary tree, turn the tree upside down and return <em>the new root</em>.</p>
+<p>You can turn a binary tree upside down with the following steps:</p>
+<ol>
+<li>The original left child becomes the new root.</li>
+<li>The original root becomes the new right child.</li>
+<li>The original right child becomes the new left child.</li>
+</ol>
+<p>The mentioned steps are done level by level. It is <strong>guaranteed</strong> that every right node has a sibling (a left node with the same parent) and has no children.</p>
+<h4>Example 1:</h4>
+<pre>Input: root = [1,2,3,4,5]
+Output: [4,5,2,null,null,3,1]
+Explanation:
+Before flip:           After flip:
+       1                       4
+      / \\                     / \\
+     2   3                   5   2
+    / \\                         / \\
+   4   5                       3   1</pre>
+<h4>Example 2:</h4>
+<pre>Input: root = []
+Output: []</pre>
+<h4>Example 3:</h4>
+<pre>Input: root = [1]
+Output: [1]</pre>
+<h4>Constraints:</h4>
+<ul>
+<li>The number of nodes in the tree will be in the range <code>[0, 10]</code>.</li>
+<li>1 &le; Node.val &le; 10</li>
+<li>Every right node in the tree has a sibling (a left node that shares the same parent) and has no children.</li>
+</ul>
+<p><em>The test harness builds a <code>TreeNode</code> tree from the level-order input list, calls your function, and serializes the returned tree back to a level-order list. Write against real <code>TreeNode</code> objects with <code>.val</code>, <code>.left</code>, <code>.right</code>.</em></p>""",
+    function_name="upsideDownBinaryTree",
+    template="""# class TreeNode:
+#     def __init__(self, val=0, left=None, right=None):
+#         self.val = val
+#         self.left = left
+#         self.right = right
+
+class Solution:
+    def upsideDownBinaryTree(self, root):
+        # Write your solution here. Return the new root.
+        pass
+""",
+    test_cases=[
+        {"input": {"root": [1,2,3,4,5]}, "expected": [4,5,2,None,None,3,1]},
+        {"input": {"root": []}, "expected": []},
+        {"input": {"root": [1]}, "expected": [1]},
+        {"input": {"root": [1,2]}, "expected": [2,None,1]},
+        {"input": {"root": [1,2,3]}, "expected": [2,3,1]},
+        {"input": {"root": [1,2,3,4,5,None,None,6,7]}, "expected": [6,7,4,None,None,5,2,None,None,3,1]},
+    ],
+    solution="""class Solution:
+    def upsideDownBinaryTree(self, root):
+        # Recursive flip down the left spine. At each node:
+        #   - Recurse into root.left first to get the new (deepest-leftmost) root.
+        #   - Rewire: root.left.left = root.right  (right sibling becomes new left)
+        #             root.left.right = root        (old parent becomes new right)
+        #   - Cut the old links: root.left = root.right = None.
+        # The new root bubbles up unchanged through every return.
+        if root is None or root.left is None:
+            return root
+        new_root = self.upsideDownBinaryTree(root.left)
+        # CRITICAL ordering: root.left still points to our old left child here, even
+        # though that child's own subtree was rewritten by the recursive call. We use
+        # root.left.left and root.left.right to assign its NEW children, then null out
+        # root's own pointers so we don't leave stale links.
+        root.left.left = root.right
+        root.left.right = root
+        root.left = None
+        root.right = None
+        return new_root
+""",
+    explanation="""**Approach: Recursive flip along the left spine**
+
+**Time:** O(h) where h is the height (= number of recursive frames) | **Space:** O(h) recursion stack
+
+**The shape constraint matters.** This problem is only well-defined because the input tree is "left-leaning": every right node is a leaf, and the structure marches down the left side. Without that constraint, "flip upside down" wouldn't be unique. The constraint means at every level we have at most three nodes to wire: the current node, its left child, and (optionally) its right child (which is a leaf).
+
+**The rewiring rules** (top-down view at each level):
+
+```
+Before:                 After:
+    P                       L
+   / \\                     / \\
+  L   R     becomes        R   P
+```
+
+Equivalently, going down the left spine, each `(parent, left, right)` triple gets its left child promoted: the right sibling becomes left's new left, the parent becomes left's new right.
+
+**Why the recursion works:** Call `flip(root.left)` first. By the time it returns, the entire left-subtree has already been transformed into its new form and we hold a handle (`new_root`) to the deepest-leftmost node — the eventual root of the whole flipped tree. After that, we can safely rewrite `root.left.left` and `root.left.right` without losing access to anything; the descent already happened.
+
+**Why null out `root.left` and `root.right`:** Without this, `root` would still claim its old children, creating cycles (or at minimum, two paths to the same node). The serializer would walk forever. Setting them to `None` correctly marks the old root as the new bottom-right leaf.
+
+**Iterative alternative:** Walk down the left spine carrying `prev`, `prev_right`, and `cur`. At each step: stash `cur.left` as next, set `cur.left = prev_right`, `cur.right = prev`, then advance. Same O(h) time, O(1) space. Useful if you want to avoid the recursion stack on deeper inputs.
+"""
+,
+    harness={"input": {"root": "tree"}, "output": "tree"}
+)
